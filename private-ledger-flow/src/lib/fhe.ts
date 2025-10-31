@@ -491,6 +491,10 @@ function normalizeOne(x: any): number[] | string | null {
       const first = x[0];
       if (isUint8Array(first) || isBuffer(first))
         return toNumberArrayFromUint8(first);
+      // If first is a number, return the entire array
+      if (typeof first === "number") {
+        return x as number[];
+      }
       return first as number[];
     }
     // array of objects (maybe envelopes) -> try unwrap first
@@ -729,122 +733,35 @@ export async function decryptWithFHE(
             ciphertextFieldPreview: preview(ciphertextField),
           });
 
-          // Extract ciphertext - Priority order:
-          // 1. Use ciphertext field if it exists and is valid
-          // 2. Extract from handles[0] if available
-          // 3. Use backupData as fallback
-          let rawPayload: any;
+          // ✅ ZAMA DEVELOPER SOLUTION: Extract ciphertext using the recommended method
+          // Priority: 1. encryptedObj?.data, 2. Object.values(handles[0]), 3. encryptedObj
+          const ciphertext =
+            encryptedObj?.data ||
+            (Array.isArray(encryptedObj?.handles)
+              ? Object.values(encryptedObj.handles[0])
+              : encryptedObj);
 
-          if (
-            ciphertextField &&
-            Array.isArray(ciphertextField) &&
-            ciphertextField.length > 0
-          ) {
-            rawPayload = ciphertextField;
-            console.log("✅ [ZAMA SDK] Using ciphertext field:", {
-              length: rawPayload.length,
-            });
-          }
-          // Extract from handles[0] - convert object with numeric keys to array
-          else if (
-            encryptedObj?.handles &&
-            Array.isArray(encryptedObj.handles) &&
-            encryptedObj.handles.length > 0
-          ) {
-            const handle = encryptedObj.handles[0];
-            if (
-              handle &&
-              typeof handle === "object" &&
-              !Array.isArray(handle)
-            ) {
-              // Convert object with numeric keys to array: {"0": 109, "1": 143, ...} -> [109, 143, ...]
-              const keys = Object.keys(handle)
-                .filter((k) => /^\d+$/.test(k))
-                .map((k) => parseInt(k, 10))
-                .sort((a, b) => a - b);
-              rawPayload = keys.map((k) => Number(handle[k]));
-              console.log(
-                "✅ [ZAMA SDK] Extracted ciphertext from handles[0]:",
-                {
-                  length: rawPayload.length,
-                  firstBytes: rawPayload.slice(0, 20),
-                  lastBytes: rawPayload.slice(-5),
-                }
-              );
-            } else if (Array.isArray(handle)) {
-              rawPayload = handle;
-              console.log("✅ [ZAMA SDK] Using handles[0] as array:", {
-                length: rawPayload.length,
-              });
-            } else {
-              rawPayload = handle;
-              console.log("✅ [ZAMA SDK] Using handles[0] directly");
-            }
-          }
-          // Fallback to backupData
-          else if (
-            backupData &&
-            Array.isArray(backupData) &&
-            backupData.length > 0 &&
-            !backupData.every((x) => x === 0)
-          ) {
-            rawPayload = backupData;
-            console.log("✅ [ZAMA SDK] Using backupData array:", {
-              length: rawPayload.length,
-            });
-          } else if (
-            backupData &&
-            typeof backupData === "object" &&
-            !Array.isArray(backupData)
-          ) {
-            rawPayload = backupData;
-            console.log("✅ [ZAMA SDK] Using backupData object");
-          } else {
-            rawPayload = encryptedObj;
-            console.log("✅ [ZAMA SDK] Using encryptedObj (fallback)");
-          }
+          console.log("✅ [ZAMA SDK] Extracted ciphertext using developer's method:", {
+            hasData: !!encryptedObj?.data,
+            hasHandles: !!encryptedObj?.handles,
+            ciphertextType: typeof ciphertext,
+            ciphertextIsArray: Array.isArray(ciphertext),
+            ciphertextLength: Array.isArray(ciphertext) ? ciphertext.length : 'N/A',
+            ciphertextPreview: preview(ciphertext),
+          });
 
-          console.log("[fhe] raw payload preview:", preview(rawPayload));
-          console.log("[fhe] raw payload type:", typeof rawPayload);
-          console.log("[fhe] raw payload isArray:", Array.isArray(rawPayload));
-
-          // If we extracted from handles[0], it's definitely ciphertext - skip normalizer size check
-          // The normalizer might reject small arrays, but a 32-byte ciphertext is valid
           let normalizedPayload: any;
-          if (
-            Array.isArray(rawPayload) &&
-            rawPayload.length > 0 &&
-            rawPayload.length < 100
-          ) {
-            // This was extracted from handles[0], so it's valid ciphertext
-            // Check if it's all zeros (which would be invalid) or has actual data
-            const hasNonZeroValues = rawPayload.some(
-              (x: any) => x !== 0 && x !== null && x !== undefined
-            );
-            if (hasNonZeroValues) {
-              // Valid ciphertext - use it directly
-              normalizedPayload = rawPayload;
-              console.log(
-                "✅ [ZAMA SDK] Using extracted ciphertext directly (bypassed normalizer size check):",
-                {
-                  length: normalizedPayload.length,
-                  firstBytes: normalizedPayload.slice(0, 10),
-                }
-              );
-            } else {
-              // All zeros - invalid
-              normalizedPayload = null;
-              console.warn(
-                "⚠️ [ZAMA SDK] Extracted ciphertext is all zeros - invalid"
-              );
-            }
+          
+          // If we have a ciphertext, use it directly (skip normalizer)
+          if (ciphertext && Array.isArray(ciphertext) && ciphertext.length > 0) {
+            normalizedPayload = ciphertext;
+            console.log("✅ [ZAMA SDK] Using extracted ciphertext directly");
+          } else if (typeof ciphertext === 'object' && ciphertext !== null) {
+            // Fallback to normalizer for object types
+            normalizedPayload = normalizeCipherForRelayer(ciphertext);
+            console.log("[fhe] normalized preview:", preview(normalizedPayload));
           } else {
-            // Use normalizer for other cases
-            normalizedPayload = normalizeCipherForRelayer(rawPayload);
-            console.log(
-              "[fhe] normalized preview:",
-              preview(normalizedPayload)
-            );
+            normalizedPayload = ciphertext;
           }
 
           // Handle NoCiphertext case
@@ -914,14 +831,14 @@ export async function decryptWithFHE(
               "NoCiphertext: payload contains no ciphertext (empty or missing)."
             );
             (err as any).code = "NoCiphertext";
-            (err as any).payloadPreview = preview(rawPayload);
+            (err as any).payloadPreview = preview(ciphertext);
             (err as any).hasMetadata = !!fullPayload.metadata;
             (err as any).metadataKeys = fullPayload.metadata
               ? Object.keys(fullPayload.metadata)
               : [];
             console.warn(
               "⚠️ [ZAMA SDK] No ciphertext found. Payload preview:",
-              preview(rawPayload)
+              preview(ciphertext)
             );
             console.warn(
               "⚠️ [ZAMA SDK] Metadata available:",
@@ -1072,7 +989,7 @@ export async function decryptWithFHE(
                     handlesArray: e3.message,
                   });
                   console.error("❌ [ZAMA SDK] Payload diagnostics:", {
-                    rawPreview: preview(rawPayload),
+                    ciphertextPreview: preview(ciphertext),
                     normalizedPreview: preview(normalizedPayload),
                     toSendPreview: preview(toSend),
                     encryptedObjKeys: Object.keys(encryptedObj || {}),
