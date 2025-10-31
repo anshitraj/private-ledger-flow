@@ -936,21 +936,36 @@ export async function decryptWithFHE(
             try {
               // publicDecrypt expects array of hex-encoded handles
               // normalizedPayload should be a hex string if we extracted from hash
-              if (typeof normalizedPayload === "string" && normalizedPayload.startsWith("0x") && normalizedPayload.length === 66) {
-                console.log("🔓 [ZAMA SDK] Attempting publicDecrypt with hex handle...");
-                const result = await (instance as any).publicDecrypt([normalizedPayload]);
+              if (
+                typeof normalizedPayload === "string" &&
+                normalizedPayload.startsWith("0x") &&
+                normalizedPayload.length === 66
+              ) {
+                console.log(
+                  "🔓 [ZAMA SDK] Attempting publicDecrypt with hex handle..."
+                );
+                const result = await (instance as any).publicDecrypt([
+                  normalizedPayload,
+                ]);
                 decrypted = Number(result[normalizedPayload]);
                 decryptionMethod = "publicDecrypt";
-                console.log("✅ [ZAMA SDK] publicDecrypt succeeded with hex handle");
+                console.log(
+                  "✅ [ZAMA SDK] publicDecrypt succeeded with hex handle"
+                );
               } else {
                 // Fallback: try with array as-is
-                console.log("🔓 [ZAMA SDK] Attempting publicDecrypt with array format...");
-                decrypted = await (instance as any).publicDecrypt([normalizedPayload]);
+                console.log(
+                  "🔓 [ZAMA SDK] Attempting publicDecrypt with array format..."
+                );
+                decrypted = await (instance as any).publicDecrypt([
+                  normalizedPayload,
+                ]);
                 decryptionMethod = "publicDecrypt";
                 console.log("✅ [ZAMA SDK] publicDecrypt succeeded");
               }
-              
-              decryptedAmount = typeof decrypted === "number" ? decrypted : Number(decrypted);
+
+              decryptedAmount =
+                typeof decrypted === "number" ? decrypted : Number(decrypted);
               console.log(
                 `✅ [ZAMA SDK] Decrypted amount: ${decryptedAmount} (method: ${decryptionMethod})`
               );
