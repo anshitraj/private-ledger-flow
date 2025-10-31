@@ -20,10 +20,32 @@ contract ConfidentialExpenses {
     
     // FHE-specific types (require Zama FHEVM compiler):
     // 
-    // import { ebool, euint8, euint16, euint32, euint64 } from "@zama-ai/fhevm-js";
+    // import { ebool, euint8, euint16, euint32, euint64 } from "@fhevm/solidity";
     // 
     // mapping(address => euint64[]) private fheUserBalances;
     // mapping(address => bytes[]) private fhePublicKeys;
+    // 
+    // Example FHE function with access control:
+    // function storeEncryptedAmount(euint64 encryptedAmount) public {
+    //     fheUserBalances[msg.sender].push(encryptedAmount);
+    //     // Grant contract permission to perform operations on this ciphertext
+    //     FHE.allow(encryptedAmount, address(this));
+    // }
+    // 
+    // function computeSum(address user) public view returns (euint64) {
+    //     euint64 sum = FHE.asEuint64(0);
+    //     FHE.allow(sum, address(this));
+    //     
+    //     for (uint i = 0; i < fheUserBalances[user].length; i++) {
+    //         euint64 balance = fheUserBalances[user][i];
+    //         // Re-allow after each operation for Zama compliance
+    //         FHE.allow(balance, address(this));
+    //         sum = FHE.add(sum, balance);
+    //         FHE.allow(sum, address(this));
+    //     }
+    //     
+    //     return sum;
+    // }
     
     // ============================================
     // FALLBACK VERSION (ACTIVE - Works on standard EVM)
