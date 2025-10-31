@@ -734,9 +734,11 @@ export async function decryptWithFHE(
           });
 
           // ✅ ZAMA DEVELOPER SOLUTION: Extract ciphertext using the recommended method
-          // Priority: 1. encryptedObj?.data, 2. Object.values(handles[0]), 3. encryptedObj
+          // According to showcase: publicDecrypt expects hex-encoded handle string
+          // Priority: 1. encryptedObj?.hash (hex handle), 2. encryptedObj?.data (raw bytes), 3. Object.values(handles[0])
           const ciphertext =
-            encryptedObj?.data ||
+            encryptedObj?.hash || // Hex-encoded handle (preferred for publicDecrypt)
+            encryptedObj?.data || // Raw bytes
             (Array.isArray(encryptedObj?.handles)
               ? Object.values(encryptedObj.handles[0])
               : encryptedObj);
@@ -931,100 +933,38 @@ export async function decryptWithFHE(
               "🔓 [ZAMA SDK] Using publicDecrypt with normalized payload..."
             );
 
-            // The SDK might expect the full encrypted object structure, not just the extracted bytes
-            // Let's try both formats: extracted bytes and full encrypted object
-            let toSend: any;
-
-            // Format 1: Try with extracted ciphertext bytes (as array)
-            if (Array.isArray(normalizedPayload)) {
-              toSend = normalizedPayload;
-            } else if (typeof normalizedPayload === "string") {
-              toSend = normalizedPayload;
-            } else {
-              toSend = [normalizedPayload];
-            }
-
-            console.log(
-              "[fhe] sending to relayer decrypt fn preview:",
-              preview(toSend)
-            );
-
             try {
-              // Format 1: Try with extracted ciphertext bytes
-              console.log(
-                "🔓 [ZAMA SDK] Attempting publicDecrypt with extracted bytes..."
-              );
-              decrypted = await (instance as any).publicDecrypt(toSend);
-              console.log("✅ [ZAMA SDK] publicDecrypt succeeded");
-            } catch (e1: any) {
-              console.log(
-                "🔍 [ZAMA SDK] Extracted bytes format failed, trying full encrypted object:",
-                e1.message
-              );
-
-              // Format 2: Try with full encrypted object structure (the SDK might need the handles structure)
-              try {
-                console.log(
-                  "🔓 [ZAMA SDK] Attempting publicDecrypt with full encrypted object..."
-                );
-                // The SDK might need the full encrypted object with handles structure
-                decrypted = await (instance as any).publicDecrypt(
-                  encryptedObj // Try with the full encrypted object
-                );
-                console.log("✅ [ZAMA SDK] Full object format succeeded");
-              } catch (e2: any) {
-                console.log(
-                  "🔍 [ZAMA SDK] Full object format failed, trying handles array:",
-                  e2.message
-                );
-
-                // Format 3: Try with handles array directly
-                try {
-                  if (
-                    encryptedObj?.handles &&
-                    Array.isArray(encryptedObj.handles)
-                  ) {
-                    console.log(
-                      "🔓 [ZAMA SDK] Attempting publicDecrypt with handles array..."
-                    );
-                    decrypted = await (instance as any).publicDecrypt(
-                      encryptedObj.handles
-                    );
-                    console.log("✅ [ZAMA SDK] Handles array format succeeded");
-                  } else {
-                    throw new Error("No handles array available");
-                  }
-                } catch (e3: any) {
-                  console.error("❌ [ZAMA SDK] All formats failed:", {
-                    extractedBytes: e1.message,
-                    fullObject: e2.message,
-                    handlesArray: e3.message,
-                  });
-                  console.error("❌ [ZAMA SDK] Payload diagnostics:", {
-                    ciphertextPreview: preview(ciphertext),
-                    normalizedPreview: preview(normalizedPayload),
-                    toSendPreview: preview(toSend),
-                    encryptedObjKeys: Object.keys(encryptedObj || {}),
-                    hasHandles: !!encryptedObj?.handles,
-                    handlesLength: encryptedObj?.handles?.length,
-                  });
-                  throw e1; // Throw original error
-                }
+              // publicDecrypt expects array of hex-encoded handles
+              // normalizedPayload should be a hex string if we extracted from hash
+              if (typeof normalizedPayload === "string" && normalizedPayload.startsWith("0x") && normalizedPayload.length === 66) {
+                console.log("🔓 [ZAMA SDK] Attempting publicDecrypt with hex handle...");
+                const result = await (instance as any).publicDecrypt([normalizedPayload]);
+                decrypted = Number(result[normalizedPayload]);
+                decryptionMethod = "publicDecrypt";
+                console.log("✅ [ZAMA SDK] publicDecrypt succeeded with hex handle");
+              } else {
+                // Fallback: try with array as-is
+                console.log("🔓 [ZAMA SDK] Attempting publicDecrypt with array format...");
+                decrypted = await (instance as any).publicDecrypt([normalizedPayload]);
+                decryptionMethod = "publicDecrypt";
+                console.log("✅ [ZAMA SDK] publicDecrypt succeeded");
               }
+              
+              decryptedAmount = typeof decrypted === "number" ? decrypted : Number(decrypted);
+              console.log(
+                `✅ [ZAMA SDK] Decrypted amount: ${decryptedAmount} (method: ${decryptionMethod})`
+              );
+            } catch (e: any) {
+              console.error("❌ [ZAMA SDK] publicDecrypt failed:", e);
+              console.error("❌ [ZAMA SDK] Payload diagnostics:", {
+                ciphertextPreview: preview(ciphertext),
+                normalizedPreview: preview(normalizedPayload),
+                encryptedObjKeys: Object.keys(encryptedObj || {}),
+                hasHash: !!encryptedObj?.hash,
+                hasHandles: !!encryptedObj?.handles,
+              });
+              throw e;
             }
-
-            // Convert decrypted value to number
-            if (typeof decrypted === "bigint") {
-              decryptedAmount = Number(decrypted);
-            } else if (typeof decrypted === "number") {
-              decryptedAmount = decrypted;
-            } else {
-              decryptedAmount = Number(decrypted);
-            }
-
-            console.log(
-              `✅ [ZAMA SDK] Decrypted amount: ${decryptedAmount} (method: ${decryptionMethod})`
-            );
           } else if (!decrypted) {
             throw new Error(
               "Neither userDecrypt nor publicDecrypt methods are available"
