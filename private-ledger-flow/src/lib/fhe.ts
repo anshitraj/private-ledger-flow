@@ -741,25 +741,37 @@ export async function decryptWithFHE(
               ? Object.values(encryptedObj.handles[0])
               : encryptedObj);
 
-          console.log("✅ [ZAMA SDK] Extracted ciphertext using developer's method:", {
-            hasData: !!encryptedObj?.data,
-            hasHandles: !!encryptedObj?.handles,
-            ciphertextType: typeof ciphertext,
-            ciphertextIsArray: Array.isArray(ciphertext),
-            ciphertextLength: Array.isArray(ciphertext) ? ciphertext.length : 'N/A',
-            ciphertextPreview: preview(ciphertext),
-          });
+          console.log(
+            "✅ [ZAMA SDK] Extracted ciphertext using developer's method:",
+            {
+              hasData: !!encryptedObj?.data,
+              hasHandles: !!encryptedObj?.handles,
+              ciphertextType: typeof ciphertext,
+              ciphertextIsArray: Array.isArray(ciphertext),
+              ciphertextLength: Array.isArray(ciphertext)
+                ? ciphertext.length
+                : "N/A",
+              ciphertextPreview: preview(ciphertext),
+            }
+          );
 
           let normalizedPayload: any;
-          
+
           // If we have a ciphertext, use it directly (skip normalizer)
-          if (ciphertext && Array.isArray(ciphertext) && ciphertext.length > 0) {
+          if (
+            ciphertext &&
+            Array.isArray(ciphertext) &&
+            ciphertext.length > 0
+          ) {
             normalizedPayload = ciphertext;
             console.log("✅ [ZAMA SDK] Using extracted ciphertext directly");
-          } else if (typeof ciphertext === 'object' && ciphertext !== null) {
+          } else if (typeof ciphertext === "object" && ciphertext !== null) {
             // Fallback to normalizer for object types
             normalizedPayload = normalizeCipherForRelayer(ciphertext);
-            console.log("[fhe] normalized preview:", preview(normalizedPayload));
+            console.log(
+              "[fhe] normalized preview:",
+              preview(normalizedPayload)
+            );
           } else {
             normalizedPayload = ciphertext;
           }
