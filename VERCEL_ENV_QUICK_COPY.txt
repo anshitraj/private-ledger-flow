@@ -1,0 +1,49 @@
+# ============================================
+# QUICK COPY - VERCEL ENVIRONMENT VARIABLES
+# Copy and paste these into Vercel Dashboard
+# ============================================
+
+VITE_CONTRACT_ADDRESS=0xYourDeployedContractAddressHere
+VITE_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_API_KEY
+VITE_RELAYER_URL=https://relayer.testnet.zama.org/
+VITE_BACKEND_URL=https://your-backend-url.vercel.app
+VITE_WALLETCONNECT_PROJECT_ID=53cdde5cc0f1e05662956d670abc5a8c
+VITE_IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs/
+
+# ============================================
+# HOW TO GET EACH VALUE:
+# ============================================
+# 
+# VITE_CONTRACT_ADDRESS:
+#   1. Deploy contract: cd hardhat && npx hardhat deploy --network sepolia
+#   2. Copy address from hardhat/deployments/address.json
+#
+# VITE_SEPOLIA_RPC_URL:
+#   1. Sign up at https://www.alchemy.com/
+#   2. Create new app → Sepolia network
+#   3. Copy API Key
+#   4. Format: https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
+#
+# VITE_RELAYER_URL:
+#   ✅ Already set - no changes needed
+#
+# VITE_BACKEND_URL:
+#   1. Deploy backend first (Vercel/Railway/Render)
+#   2. Copy your backend deployment URL
+#   3. Update this variable
+#
+# VITE_WALLETCONNECT_PROJECT_ID:
+#   ✅ Already set - or get new one from https://cloud.walletconnect.com
+#
+# VITE_IPFS_GATEWAY:
+#   ✅ Already set - default Pinata gateway
+#
+# ============================================
+# IMPORTANT:
+# ============================================
+# - Replace "YourDeployedContractAddressHere" with actual address
+# - Replace "YOUR_ALCHEMY_API_KEY" with your Alchemy key
+# - Replace "your-backend-url.vercel.app" with your backend URL
+# - Add all variables in Vercel Dashboard → Settings → Environment Variables
+# - Select all environments: Production, Preview, Development
+
