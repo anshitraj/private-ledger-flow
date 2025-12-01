@@ -104,18 +104,22 @@ jobs:
       
       - name: Install dependencies
         run: |
-          cd private-ledger-flow
+          cd frontend
           npm install
       
       - name: Run frontend tests
         run: |
-          cd private-ledger-flow
-          npm test -- --run || echo "No tests configured yet"
+          cd frontend
+          if grep -q '"test"' package.json; then
+            npm test -- --run
+          else
+            echo "No test script found, skipping tests"
+          fi
         continue-on-error: true
       
       - name: Build frontend
         run: |
-          cd private-ledger-flow
+          cd frontend
           npm run build
         env:
           VITE_CONTRACT_ADDRESS: 0x0000000000000000000000000000000000000000
@@ -147,7 +151,7 @@ jobs:
       
       - name: Run linter (frontend)
         run: |
-          cd private-ledger-flow
+          cd frontend
           npm install
           npm run lint || exit 0
 
