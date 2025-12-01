@@ -1,6 +1,6 @@
 {
-  "name": "Private Transaction Tracker",
-  "short_name": "PTT",
+  "name": "Private Expense Tracker",
+  "short_name": "PET",
   "description": "Encrypted expense dashboard with FHE and blockchain attestation",
   "start_url": "/",
   "display": "standalone",
