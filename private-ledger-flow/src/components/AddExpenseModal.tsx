@@ -40,6 +40,7 @@ interface AddExpenseModalProps {
 export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange }: AddExpenseModalProps) {
   const { t } = useTranslation();
   const { address } = useAccount();
+  const queryClient = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = onOpenChange || setInternalOpen;
