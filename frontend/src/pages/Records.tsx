@@ -22,6 +22,8 @@ export default function Records() {
   const { t } = useTranslation();
   const { data: backendRecords = [], isLoading, error } = useBackendRecords();
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [decryptedAmounts, setDecryptedAmounts] = useState<Record<string, number>>({});
+  const [decryptingCids, setDecryptingCids] = useState<Set<string>>(new Set());
 
   const expenses: Expense[] = backendRecords.map(record => ({
     id: record.cid,
@@ -43,11 +45,19 @@ export default function Records() {
   const handleDecrypt = async (expense: Expense) => {
     if (!expense.cid) return;
 
+    // Check if already decrypted
+    if (decryptedAmounts[expense.cid]) {
+      return; // Already decrypted, no need to decrypt again
+    }
+
     // Check if it's a mock CID (handle various mock formats)
     if (expense.cid.includes('Mock') || expense.cid.includes('QmMock') || expense.cid.includes('QmYwAPJzv5CZsnAMockCID')) {
       toast.error('Cannot decrypt demo data. Submit a real expense to test decryption.');
       return;
     }
+
+    // Mark as decrypting
+    setDecryptingCids(prev => new Set(prev).add(expense.cid!));
 
     try {
       toast.info('Decrypting expense...');
@@ -145,6 +155,12 @@ export default function Records() {
         timestamp: expense.timestamp
       });
       
+      // Store decrypted amount in state
+      setDecryptedAmounts(prev => ({
+        ...prev,
+        [expense.cid!]: decrypted.amount
+      }));
+      
       toast.success(`Decrypted: $${decrypted.amount} ${decrypted.currency}`);
     } catch (error: any) {
       console.error('Decryption error:', error);
@@ -155,6 +171,10 @@ export default function Records() {
         
         // If expense object has amount, use it (from optimistic update or backend)
         if (expense.amount && expense.amount > 0) {
+          setDecryptedAmounts(prev => ({
+            ...prev,
+            [expense.cid!]: expense.amount
+          }));
           toast.success(`Using stored data: $${expense.amount} ${expense.currency}`);
           return;
         }
@@ -167,11 +187,22 @@ export default function Records() {
       // For other errors, try using expense object's amount as fallback
       if (expense.amount && expense.amount > 0) {
         console.warn('Decryption failed, but expense object has amount. Using stored data.');
+        setDecryptedAmounts(prev => ({
+          ...prev,
+          [expense.cid!]: expense.amount
+        }));
         toast.success(`Using stored data: $${expense.amount} ${expense.currency}`);
         return;
       }
       
       toast.error(`Failed to decrypt expense: ${error.message || 'Unknown error'}`);
+    } finally {
+      // Remove from decrypting set
+      setDecryptingCids(prev => {
+        const next = new Set(prev);
+        next.delete(expense.cid!);
+        return next;
+      });
     }
   };
 
@@ -184,7 +215,7 @@ export default function Records() {
       >
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-400 bg-clip-text text-transparent">
             {t('records.title')}
           </h1>
           <p className="text-muted-foreground">
@@ -236,6 +267,8 @@ export default function Records() {
                 expense={expense}
                 showDecrypt
                 onDecrypt={() => handleDecrypt(expense)}
+                decryptedAmount={expense.cid ? decryptedAmounts[expense.cid] : null}
+                isDecrypting={expense.cid ? decryptingCids.has(expense.cid) : false}
               />
             ))}
           </div>

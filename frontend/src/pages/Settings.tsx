@@ -127,7 +127,7 @@ export default function Settings() {
       >
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-400 bg-clip-text text-transparent">
             {t('settings.title')}
           </h1>
           <p className="text-muted-foreground">
@@ -137,10 +137,10 @@ export default function Settings() {
 
         <div className="space-y-6">
           {/* Encryption Keys */}
-          <Card className="border-border/50 bg-card/80 backdrop-blur">
+          <Card className="border-yellow-500/20 bg-card/90 backdrop-blur glass">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-yellow-500/90">
+                <Key className="h-5 w-5 text-yellow-500" />
                 {t('settings.keys')}
               </CardTitle>
               <CardDescription>
@@ -151,7 +151,7 @@ export default function Settings() {
               <Button
                 onClick={handleGenerateKeys}
                 disabled={generating}
-                className="w-full"
+                className="w-full bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-semibold shadow-gold hover:shadow-gold border border-yellow-400/30"
               >
                 {generating ? 'Generating...' : t('settings.generateNew')}
               </Button>
@@ -184,10 +184,10 @@ export default function Settings() {
           </Card>
 
           {/* Privacy Options */}
-          <Card className="border-border/50 bg-card/80 backdrop-blur">
+          <Card className="border-yellow-500/20 bg-card/90 backdrop-blur glass">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-yellow-500/90">
+                <Shield className="h-5 w-5 text-yellow-500" />
                 Privacy Options
               </CardTitle>
             </CardHeader>
@@ -237,10 +237,10 @@ export default function Settings() {
           </Card>
 
           {/* Theme */}
-          <Card className="border-border/50 bg-card/80 backdrop-blur">
+          <Card className="border-yellow-500/20 bg-card/90 backdrop-blur glass">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {isDarkMode ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              <CardTitle className="flex items-center gap-2 text-yellow-500/90">
+                {isDarkMode ? <Moon className="h-5 w-5 text-yellow-500" /> : <Sun className="h-5 w-5 text-yellow-500" />}
                 {t('settings.theme')}
               </CardTitle>
             </CardHeader>
@@ -262,30 +262,27 @@ export default function Settings() {
           </Card>
 
           {/* Language */}
-          <Card className="border-border/50 bg-card/80 backdrop-blur">
+          <Card className="border-yellow-500/20 bg-card/90 backdrop-blur glass">
             <CardHeader>
-              <CardTitle>{t('settings.language')}</CardTitle>
+              <CardTitle className="text-yellow-500/90">{t('settings.language')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <Button
                   variant={i18n.language === 'en' ? 'default' : 'outline'}
                   onClick={() => i18n.changeLanguage('en')}
-                  className="w-full"
+                  className={i18n.language === 'en' 
+                    ? "w-full bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-semibold shadow-gold" 
+                    : "w-full border-yellow-500/30 hover:bg-yellow-500/10"}
                 >
                   English
                 </Button>
                 <Button
-                  variant={i18n.language === 'pa' ? 'default' : 'outline'}
-                  onClick={() => i18n.changeLanguage('pa')}
-                  className="w-full"
-                >
-                  ਪੰਜਾਬੀ
-                </Button>
-                <Button
                   variant={i18n.language === 'hi' ? 'default' : 'outline'}
                   onClick={() => i18n.changeLanguage('hi')}
-                  className="w-full"
+                  className={i18n.language === 'hi' 
+                    ? "w-full bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-semibold shadow-gold" 
+                    : "w-full border-yellow-500/30 hover:bg-yellow-500/10"}
                 >
                   हिंदी
                 </Button>

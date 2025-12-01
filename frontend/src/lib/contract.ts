@@ -36,9 +36,14 @@ export const CONTRACT_ADDRESS = (import.meta.env.VITE_CONTRACT_ADDRESS || '0x000
  * }
  */
 export const CONTRACT_ABI = [
+  // FHE function: Store encrypted amount with handle and attestation
+  // Note: externalEuint64 is encoded as bytes in the ABI
+  parseAbiItem('function storeEncryptedAmount(bytes extHandle, bytes attestation) external'),
+  // Fallback function: Attest expense with CID
   parseAbiItem('function attestExpense(bytes32 submissionHash, string cid, bytes txMeta) external'),
   parseAbiItem('function verifyAttestation(bytes32 submissionHash) external view returns (bool)'),
   parseAbiItem('event ExpenseAttested(address indexed user, bytes32 indexed submissionHash, string cid, uint256 timestamp, bytes txMeta)'),
+  parseAbiItem('event EncryptedAmountStored(address indexed user, bytes32 handle)'),
 ] as const;
 
 export const EXPENSE_ATTESTED_EVENT = parseAbiItem(

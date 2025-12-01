@@ -90,7 +90,7 @@ async function main() {
 
     // Step 5: Run frontend tests
     log('\n🧪 Step 5: Running frontend unit tests...', 'yellow');
-    process.chdir(path.join(PROJECT_ROOT, 'private-ledger-flow'));
+    process.chdir(path.join(PROJECT_ROOT, 'frontend'));
     exec('npm test -- --run');
     log('   ✅ Frontend tests passed', 'green');
 
@@ -105,7 +105,7 @@ async function main() {
     log('   Database: ✅ Migrations applied');
     log('\n📝 Next steps:');
     log('   1. Start backend: cd backend && npm run dev');
-    log('   2. Start frontend: cd private-ledger-flow && npm run dev');
+    log('   2. Start frontend: cd frontend && npm run dev');
     log('   3. Test end-to-end flow manually');
     log('');
 

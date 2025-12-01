@@ -8,7 +8,7 @@
   "theme_color": "#a855f7",
   "icons": [
     {
-      "src": "/favicon.ico",
+      "src": "/wallet.ico",
       "sizes": "64x64",
       "type": "image/x-icon"
     }

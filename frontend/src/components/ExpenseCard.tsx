@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { ExternalLink, Lock, CheckCircle2, Clock } from 'lucide-react';
+import { ExternalLink, Lock, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -14,6 +14,8 @@ interface ExpenseCardProps {
   expense: Expense;
   onDecrypt?: () => void;
   showDecrypt?: boolean;
+  decryptedAmount?: number | null; // Decrypted amount to display
+  isDecrypting?: boolean; // Whether decryption is in progress
 }
 
 const categoryIcons: Record<string, string> = {
@@ -34,7 +36,7 @@ const categoryColors: Record<string, string> = {
   misc: 'bg-gray-500/10 text-gray-500',
 };
 
-export function ExpenseCard({ expense, onDecrypt, showDecrypt = false }: ExpenseCardProps) {
+export function ExpenseCard({ expense, onDecrypt, showDecrypt = false, decryptedAmount, isDecrypting = false }: ExpenseCardProps) {
   const { t } = useTranslation();
 
   const formatDate = (timestamp: number) => {
@@ -58,7 +60,7 @@ export function ExpenseCard({ expense, onDecrypt, showDecrypt = false }: Expense
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="overflow-hidden border-border/50 bg-card/80 backdrop-blur transition-smooth hover:border-primary/50 hover:shadow-glow">
+      <Card className="overflow-hidden border-yellow-500/20 bg-card/90 backdrop-blur glass transition-smooth hover:border-yellow-500/40 hover:shadow-gold">
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3 flex-1">
@@ -85,12 +87,19 @@ export function ExpenseCard({ expense, onDecrypt, showDecrypt = false }: Expense
                 </div>
                 
                 {expense.encrypted ? (
-                  <p className="text-2xl font-bold text-primary mb-1 flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    ••••
-                  </p>
+                  <div className="mb-1">
+                    <p className="text-2xl font-bold text-yellow-500 mb-1 flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      ••••
+                    </p>
+                    {expense.cid && (
+                      <p className="text-xs font-mono text-yellow-500/60 break-all">
+                        Ciphertext: {expense.cid.slice(0, 16)}...
+                      </p>
+                    )}
+                  </div>
                 ) : (
-                  <p className="text-2xl font-bold mb-1">
+                  <p className="text-2xl font-bold mb-1 text-yellow-500">
                     {expense.amount.toLocaleString()}
                   </p>
                 )}
@@ -111,7 +120,7 @@ export function ExpenseCard({ expense, onDecrypt, showDecrypt = false }: Expense
             {/* Status & Actions */}
             <div className="flex flex-col items-end gap-2">
               {expense.status === 'attested' && (
-                <Badge variant="default" className="bg-primary/20 text-primary border-primary/30">
+                <Badge variant="default" className="bg-yellow-500/20 text-yellow-500 border-yellow-500/30">
                   <CheckCircle2 className="mr-1 h-3 w-3" />
                   {t('dashboard.attested')}
                 </Badge>
@@ -123,35 +132,54 @@ export function ExpenseCard({ expense, onDecrypt, showDecrypt = false }: Expense
                 </Badge>
               )}
 
-              <div className="flex gap-1">
-                {isValidTxHash(expense.txHash) && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => {
-                      try {
-                        const url = getSepoliaExplorerUrl(expense.txHash!);
-                        window.open(url, '_blank');
-                      } catch (error) {
-                        console.error('Invalid transaction hash:', error);
-                        toast.error('Invalid transaction hash');
-                      }
-                    }}
-                    title="View on Etherscan"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                )}
-                {showDecrypt && onDecrypt && expense.encrypted && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onDecrypt}
-                    className="text-xs"
-                  >
-                    {t('records.decrypt')}
-                  </Button>
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex gap-1">
+                  {isValidTxHash(expense.txHash) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        try {
+                          const url = getSepoliaExplorerUrl(expense.txHash!);
+                          window.open(url, '_blank');
+                        } catch (error) {
+                          console.error('Invalid transaction hash:', error);
+                          toast.error('Invalid transaction hash');
+                        }
+                      }}
+                      title="View on Etherscan"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {showDecrypt && onDecrypt && expense.encrypted && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onDecrypt}
+                      disabled={isDecrypting}
+                      className="text-xs border-yellow-500/30 hover:bg-yellow-500/10 hover:border-yellow-500/50"
+                    >
+                      {isDecrypting ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          Decrypting...
+                        </>
+                      ) : (
+                        t('records.decrypt')
+                      )}
+                    </Button>
+                  )}
+                </div>
+                {/* Show decrypted amount below buttons */}
+                {showDecrypt && expense.encrypted && decryptedAmount !== undefined && decryptedAmount !== null && (
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-green-500/10 border border-green-500/30">
+                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+                    <span className="text-xs font-semibold text-green-500">
+                      Decrypted: ${decryptedAmount.toLocaleString()} {expense.currency}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>

@@ -8,40 +8,42 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 240 10% 6%;
-    --foreground: 240 5% 96%;
+    --background: 0 0% 4%;
+    --foreground: 45 100% 95%;
 
-    --card: 240 8% 10%;
-    --card-foreground: 240 5% 96%;
+    --card: 0 0% 8%;
+    --card-foreground: 45 100% 95%;
 
-    --popover: 240 8% 12%;
-    --popover-foreground: 240 5% 96%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 45 100% 95%;
 
-    --primary: 263 70% 60%;
-    --primary-foreground: 240 5% 96%;
+    --primary: 45 100% 55%;
+    --primary-foreground: 0 0% 4%;
 
-    --secondary: 240 6% 16%;
-    --secondary-foreground: 240 5% 96%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 45 100% 95%;
 
-    --muted: 240 6% 18%;
-    --muted-foreground: 240 5% 64%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 45 30% 65%;
 
-    --accent: 217 91% 60%;
-    --accent-foreground: 240 5% 96%;
+    --accent: 45 100% 50%;
+    --accent-foreground: 0 0% 4%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 240 5% 96%;
+    --destructive-foreground: 45 100% 95%;
 
-    --border: 240 6% 20%;
-    --input: 240 6% 20%;
-    --ring: 263 70% 60%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 45 100% 55%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(263 70% 60%) 0%, hsl(217 91% 60%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(240 8% 10%) 0%, hsl(240 8% 12%) 100%);
-    --shadow-glow: 0 0 40px hsl(263 70% 60% / 0.2);
-    --shadow-card: 0 8px 32px hsl(240 10% 3% / 0.4);
+    --gradient-primary: linear-gradient(135deg, hsl(45 100% 55%) 0%, hsl(45 100% 45%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 8%) 0%, hsl(0 0% 10%) 100%);
+    --gradient-gold: linear-gradient(135deg, hsl(45 100% 60%) 0%, hsl(45 100% 50%) 100%);
+    --shadow-glow: 0 0 40px hsl(45 100% 55% / 0.3);
+    --shadow-card: 0 8px 32px hsl(0 0% 0% / 0.6);
+    --shadow-gold: 0 0 20px hsl(45 100% 55% / 0.4);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
@@ -88,11 +90,12 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground antialiased;
-    background: radial-gradient(ellipse at top, hsl(240 10% 8%), hsl(240 10% 6%));
+    background: radial-gradient(ellipse at top, hsl(0 0% 6%), hsl(0 0% 4%));
+    background-attachment: fixed;
   }
   
   body.light {
-    background: radial-gradient(ellipse at top, hsl(240 5% 96%), hsl(0 0% 100%));
+    background: radial-gradient(ellipse at top, hsl(45 5% 96%), hsl(0 0% 100%));
   }
 }
 
@@ -118,8 +121,24 @@ All colors MUST be HSL.
   }
 
   .glass {
-    background: hsl(240 8% 10% / 0.6);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(240 6% 20% / 0.5);
+    background: hsl(0 0% 8% / 0.7);
+    backdrop-filter: blur(16px);
+    border: 1px solid hsl(45 100% 55% / 0.2);
+  }
+
+  .gold-gradient {
+    background: var(--gradient-gold);
+  }
+
+  .gold-glow {
+    box-shadow: var(--shadow-gold);
+  }
+
+  .text-gold {
+    color: hsl(45 100% 55%);
+  }
+
+  .border-gold {
+    border-color: hsl(45 100% 55% / 0.3);
   }
 }

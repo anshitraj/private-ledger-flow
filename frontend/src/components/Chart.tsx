@@ -18,9 +18,9 @@ export function Chart({ data, title }: ChartProps) {
   const CustomTooltip = ({ active, payload }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
-        <div className="rounded-lg border border-border bg-background p-3 shadow-lg">
-          <p className="text-sm text-muted-foreground">{payload[0].payload.date}</p>
-          <p className="text-lg font-bold text-primary">
+        <div className="rounded-lg border border-yellow-500/30 bg-card/95 backdrop-blur p-3 shadow-gold">
+          <p className="text-sm text-yellow-500/70">{payload[0].payload.date}</p>
+          <p className="text-lg font-bold text-yellow-500">
             {payload[0].value.toLocaleString()}
           </p>
         </div>
@@ -30,9 +30,9 @@ export function Chart({ data, title }: ChartProps) {
   };
 
   return (
-    <Card className="border-border/50 bg-card/80 backdrop-blur">
+    <Card className="border-yellow-500/20 bg-card/90 backdrop-blur glass">
       <CardHeader>
-        <CardTitle className="text-lg">
+        <CardTitle className="text-lg text-yellow-500/90">
           {title || 'Expense Trend (Last 30 Days)'}
         </CardTitle>
       </CardHeader>
@@ -41,25 +41,32 @@ export function Chart({ data, title }: ChartProps) {
           <AreaChart data={data}>
             <defs>
               <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                <stop offset="5%" stopColor="hsl(45 100% 55%)" stopOpacity={0.4}/>
+                <stop offset="95%" stopColor="hsl(45 100% 55%)" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(45 100% 55% / 0.2)" opacity={0.3} />
             <XAxis 
               dataKey="date" 
-              stroke="hsl(var(--muted-foreground))"
+              stroke="hsl(45 30% 65%)"
               fontSize={12}
             />
             <YAxis 
-              stroke="hsl(var(--muted-foreground))"
+              stroke="hsl(45 30% 65%)"
               fontSize={12}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip 
+              content={<CustomTooltip />}
+              contentStyle={{
+                backgroundColor: 'hsl(0 0% 8%)',
+                border: '1px solid hsl(45 100% 55% / 0.3)',
+                borderRadius: '0.5rem',
+              }}
+            />
             <Area 
               type="monotone" 
               dataKey="total" 
-              stroke="hsl(var(--primary))" 
+              stroke="hsl(45 100% 55%)" 
               strokeWidth={2}
               fill="url(#colorTotal)"
             />

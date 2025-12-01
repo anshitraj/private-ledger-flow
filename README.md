@@ -1,28 +1,70 @@
 # Private Expense Tracker
 
-🔐 **Encrypted Expense Dashboard with Fully Homomorphic Encryption (FHE) and Blockchain Attestation**
+Built with Zama FHEVM
 
-A privacy-first expense tracking application that uses Zama's FHE technology to encrypt expense data, stores it on IPFS, and attests transactions on the Sepolia blockchain. Amounts remain encrypted throughout the entire process - even during computation!
+This is a production-ready FHEVM implementation showcasing private expense tracking with encrypted amounts, categories, and metadata. All financial data remains encrypted throughout the entire lifecycle - from encryption to storage to on-chain attestation.
 
-## ✨ Features
+## Technology Badges
 
-- 🔒 **Fully Homomorphic Encryption** - Expenses encrypted with Zama Relayer SDK
-- ⛓️ **Blockchain Attestation** - On-chain verification on Sepolia testnet
-- 📦 **IPFS Storage** - Decentralized storage for encrypted data
-- 🎨 **Modern UI** - Beautiful dark theme with gradient accents
-- 🔐 **Wallet Integration** - Connect with MetaMask, WalletConnect, and more
-- 📊 **Dashboard** - View encrypted expenses and statistics
-- ✅ **Verification** - Verify attestations on-chain using IPFS CIDs
-- 🌍 **Multi-language** - i18n support (English, Hindi, and more)
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Built with Zama FHEVM](https://img.shields.io/badge/Built%20with-Zama%20FHEVM-purple.svg)
+![React](https://img.shields.io/badge/React-18.x-blue.svg)
+![Solidity](https://img.shields.io/badge/Solidity-0.8.24-orange.svg)
 
-## 🚀 Quick Start
+## Overview
+
+Private Expense Tracker is a privacy-first financial application that leverages Zama's Fully Homomorphic Encryption (FHE) to protect user expense data. Unlike traditional expense trackers, this application ensures that:
+
+- **Expense amounts are encrypted** using FHEVM (`euint64`) - no one can see how much you spent
+- **Data is stored on IPFS** in encrypted form - decentralized and censorship-resistant
+- **On-chain attestation** provides verifiable proof without revealing sensitive data
+- **Homomorphic operations** allow computation on encrypted data without decryption
+
+## Technical Deep Dive
+
+📖 **[FHEVM_INTEGRATION.md](./docs/FHEVM_INTEGRATION.md)** - Complete guide on encryption workflows, smart contract patterns, relayer integration, and privacy architecture.
+
+## Key Features
+
+### Privacy-First Architecture
+
+- **Encrypted Expense Amounts**: Individual amounts are encrypted using FHEVM (`euint64`) - no one can see how much you spent
+- **Encrypted Metadata**: Categories and notes are encrypted and stored on IPFS
+- **Encrypted User Balances**: Total platform balance encrypted using FHE homomorphic encryption
+- **On-chain Verification**: Transaction hashes and IPFS CIDs provide verifiable attestations
+- **User-Controlled Decryption**: Only the expense creator can decrypt their own amounts
+- **Transparent Verification**: Final attestations become publicly verifiable on-chain
+
+### Technical Features
+
+- **Zama Relayer SDK Integration**: Real FHE encryption with automatic fallback
+- **IPFS Storage**: Decentralized storage via Pinata
+- **Smart Contract**: FHEVM-compatible Solidity contract on Sepolia
+- **Modern Frontend**: React + TypeScript + Vite + Tailwind CSS
+- **Wallet Integration**: MetaMask, WalletConnect, and more via Wagmi/RainbowKit
+
+## Project Structure
+
+```
+.
+├── frontend/          # React frontend application
+├── backend/           # Express.js backend API
+├── hardhat/           # Smart contracts and deployment
+├── docs/              # Documentation
+│   ├── FHEVM_INTEGRATION.md
+│   ├── USER_GUIDE.md
+│   └── ADMIN_GUIDE.md
+└── README.md
+```
+
+## Quick Start
 
 ### Prerequisites
 
 - Node.js 18+ and npm
 - MetaMask or compatible Web3 wallet
-- Sepolia testnet ETH (for on-chain attestations)
-- Alchemy/Infura RPC URL (for Sepolia)
+- Sepolia testnet ETH
+- Alchemy/Infura RPC URL
 
 ### Installation
 
@@ -34,167 +76,162 @@ cd private-ledger-flow
 # Install dependencies
 npm install
 
-# Set up environment variables
-cp .env.example .env
+# Install frontend dependencies
+cd frontend
+npm install
+
+# Install backend dependencies
+cd ../backend
+npm install
+
+# Install hardhat dependencies
+cd ../hardhat
+npm install
 ```
 
-### Environment Variables
+### Environment Setup
 
-Create a `.env` file in the `private-ledger-flow` directory:
-
+**Frontend** (`frontend/.env`):
 ```env
-# Smart Contract
-VITE_CONTRACT_ADDRESS=0xYourDeployedContractAddress
-
-# Blockchain RPC
+VITE_CONTRACT_ADDRESS=0xYourContractAddress
 VITE_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
-
-# Zama Relayer
 VITE_RELAYER_URL=https://relayer.testnet.zama.org/
-
-# Backend API
 VITE_BACKEND_URL=http://localhost:3001
-
-# WalletConnect
 VITE_WALLETCONNECT_PROJECT_ID=your_project_id
-
-# IPFS Gateway
 VITE_IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs/
+```
+
+**Backend** (`backend/.env`):
+```env
+DATABASE_URL=postgresql://user:pass@host:6543/db?pgbouncer=true
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
+CONTRACT_ADDRESS=0xYourContractAddress
+PINATA_API_KEY=your_pinata_key
+PINATA_SECRET_API_KEY=your_pinata_secret
+IPFS_GATEWAY_URL=https://gateway.pinata.cloud/ipfs
 ```
 
 ### Deploy Smart Contract
 
 ```bash
 cd hardhat
-npm install
-npx hardhat deploy --network sepolia
+npx hardhat run scripts/deploy.ts --network sepolia
 ```
 
-Copy the deployed contract address to your `.env` file.
+Copy the deployed contract address to your `.env` files.
 
-### Run Development Server
+### Run Development Servers
 
 ```bash
-# Frontend
-cd private-ledger-flow
+# Terminal 1: Frontend
+cd frontend
 npm run dev
 
-# Backend (in separate terminal)
+# Terminal 2: Backend
 cd backend
-npm install
 npm run dev
 ```
 
-Visit http://localhost:8080
+Visit `http://localhost:8080`
 
-## 🏗️ Architecture
+## Documentation
 
-### Frontend (`private-ledger-flow/`)
-- **React + Vite** - Modern React with Vite build tool
-- **Wagmi + RainbowKit** - Ethereum wallet integration
-- **Zama Relayer SDK** - FHE encryption/decryption
-- **shadcn/ui** - Beautiful component library
-- **Framer Motion** - Smooth animations
+- **[FHEVM_INTEGRATION.md](./docs/FHEVM_INTEGRATION.md)** - Complete technical documentation on FHEVM integration, encryption flows, and contract architecture
+- **[USER_GUIDE.md](./docs/USER_GUIDE.md)** - End-user guide for using the application
+- **[ADMIN_GUIDE.md](./docs/ADMIN_GUIDE.md)** - Deployment and administration guide
 
-### Backend (`backend/`)
-- **Express.js** - REST API server
-- **Prisma** - Database ORM (PostgreSQL/SQLite)
-- **IPFS Service** - Pinata integration for IPFS uploads
-- **Ethereum Listener** - Monitors blockchain events
+## Smart Contract
 
-### Smart Contract (`hardhat/`)
-- **Solidity** - ConfidentialExpenses contract
-- **Hardhat** - Development environment
-- **Sepolia Testnet** - Deployment target
+### ConfidentialExpenses.sol
 
-## 🔐 FHE Integration
+The main smart contract implements:
 
-This application uses **Zama Relayer SDK** for Fully Homomorphic Encryption:
+- **FHE Storage**: `storeEncryptedAmount()` - Stores encrypted amounts as `euint64` handles
+- **Attestation**: `attestExpense()` - Attests IPFS CIDs on-chain
+- **Homomorphic Operations**: `sumUserBalances()` - Computes encrypted totals
+- **Access Control**: `FHE.allow()` - Controls decryption permissions
 
-- **Encryption**: Uses `createEncryptedInput()` to encrypt expense amounts
-- **Decryption**: Uses `userDecrypt()` or `publicDecrypt()` for decryption
-- **Relayer**: Official Zama testnet relayer at `https://relayer.testnet.zama.org/`
+See [hardhat/contracts/ConfidentialExpenses.sol](./hardhat/contracts/ConfidentialExpenses.sol) for full source code.
+
+## FHEVM Integration
 
 ### Encryption Flow
 
 1. User enters expense amount
-2. Amount encrypted with Zama FHE SDK
-3. Encrypted data uploaded to IPFS
-4. IPFS CID + submission hash attested on-chain
-5. Transaction hash stored for verification
+2. Frontend calls `createEncryptedInput(contract, user)` via Zama Relayer SDK
+3. Adds amount with `buffer.add64(BigInt(amount))`
+4. Encrypts with `buffer.encrypt()` → returns `{ handles, inputProof }`
+5. Calls `storeEncryptedAmount(handle, proof)` on contract
+6. Contract verifies attestation and stores encrypted handle
 
 ### Decryption Flow
 
-1. User clicks "Decrypt Locally"
-2. Encrypted data downloaded from IPFS
-3. Decrypted using Zama SDK
-4. Plaintext amount displayed (only to user)
+1. User clicks "Decrypt" on expense
+2. Frontend downloads encrypted data from IPFS
+3. Decrypts using Zama SDK `userDecrypt(handle)`
+4. Displays plaintext amount to user
 
-## 📦 IPFS Integration
+### Homomorphic Operations
 
-The application uses **Pinata** for IPFS storage:
-
-- Encrypted expense data stored on IPFS
-- CID (Content Identifier) used for verification
-- Public IPFS gateway for retrieval
-
-## ⛓️ Blockchain Integration
-
-### Smart Contract
-
-The `ConfidentialExpenses` contract on Sepolia:
-
+The contract supports encrypted addition:
 ```solidity
-function attestExpense(bytes32 submissionHash, string cid, bytes txMeta) external
-function verifyAttestation(bytes32 submissionHash) external view returns (bool)
-event ExpenseAttested(address indexed user, bytes32 indexed submissionHash, string cid, uint256 timestamp, bytes txMeta)
+function sumUserBalances(address user) public returns (euint64) {
+    euint64 sum = FHE.asEuint64(0);
+    for (uint i = 0; i < fheUserBalances[user].length; i++) {
+        sum = FHE.add(sum, fheUserBalances[user][i]);
+    }
+    return sum;
+}
 ```
 
-### Verification
+## Deployment
 
-Users can verify attestations by:
-1. Entering IPFS CID in Verify page
-2. System checks on-chain attestation
-3. Displays verification status and transaction details
-
-## 🚀 Deployment
-
-### Vercel (Frontend)
+### Frontend (Vercel)
 
 1. Import repository to Vercel
-2. Set root directory to `private-ledger-flow`
+2. Set root directory to `frontend`
 3. Add environment variables
-4. Deploy!
+4. Deploy
 
-See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) for detailed instructions.
+### Backend (Vercel)
 
-### Backend Deployment
+1. Set root directory to `backend`
+2. Add environment variables
+3. Deploy (serverless functions auto-detected)
 
-Deploy backend to:
-- Vercel (Serverless Functions)
-- Railway
-- Render
-- Or any Node.js hosting
+### Database (Supabase)
 
-Update `VITE_BACKEND_URL` in frontend after deployment.
+1. Create PostgreSQL database
+2. Run Prisma migrations: `npx prisma migrate deploy`
+3. Use connection pooler (port 6543)
 
-## 📚 Documentation
+## Testing
 
-- [Vercel Deployment Guide](./VERCEL_DEPLOYMENT.md)
-- [Environment Variables Quick Reference](./VERCEL_ENV_VARIABLES.md)
-- [Environment Setup](./ENV_SETUP.md)
+```bash
+# Run contract tests
+cd hardhat
+npm test
 
-## 🛠️ Tech Stack
+# Run backend tests
+cd backend
+npm test
 
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS
-- **Blockchain**: Wagmi, RainbowKit, Viem
-- **FHE**: Zama Relayer SDK
+# Run frontend tests
+cd frontend
+npm test
+```
+
+## Tech Stack
+
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui
+- **Blockchain**: Wagmi, RainbowKit, Viem, Ethers.js
+- **FHE**: Zama Relayer SDK (@zama-fhe/relayer-sdk)
 - **Storage**: IPFS (Pinata)
-- **Backend**: Express.js, Prisma
-- **Smart Contracts**: Solidity, Hardhat
-- **UI**: shadcn/ui, Framer Motion, Lucide Icons
+- **Backend**: Express.js, Prisma, PostgreSQL
+- **Smart Contracts**: Solidity 0.8.24, Hardhat, FHEVM
+- **UI**: Framer Motion, Lucide Icons, Sonner (toasts)
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please:
 
@@ -203,11 +240,11 @@ Contributions welcome! Please:
 3. Make your changes
 4. Submit a pull request
 
-## 📄 License
+## License
 
 MIT License - See LICENSE file for details
 
-## 🙏 Credits
+## Credits
 
 Built with:
 - [Zama FHE](https://zama.ai/) - Fully Homomorphic Encryption
@@ -215,13 +252,13 @@ Built with:
 - [shadcn/ui](https://ui.shadcn.com/) - UI components
 - [IPFS](https://ipfs.io/) - Decentralized storage
 
-## 🔗 Links
+## Links
 
 - **GitHub**: https://github.com/anshitraj/private-ledger-flow
-- **Zama Docs**: https://docs.zama.ai/
+- **Zama Docs**: https://docs.zama.org/
 - **Zama Discord**: https://discord.com/invite/fhe-org
 
-## 📞 Support
+## Support
 
 - Open an issue on GitHub
 - Join Zama Discord for FHE questions
@@ -230,4 +267,3 @@ Built with:
 ---
 
 **Built with ❤️ using Zama FHE technology**
-

@@ -106,21 +106,24 @@ export default function Dashboard() {
       value: '••••',
       icon: Wallet,
       description: t('dashboard.encrypted'),
-      gradient: 'from-purple-500 to-blue-500',
+      gradient: 'from-yellow-500 to-amber-500',
+      color: 'text-yellow-500',
     },
     {
       title: t('dashboard.monthlyTotal'),
       value: '••••',
       icon: TrendingUp,
       description: t('dashboard.encrypted'),
-      gradient: 'from-blue-500 to-cyan-500',
+      gradient: 'from-amber-500 to-orange-500',
+      color: 'text-amber-500',
     },
     {
       title: t('dashboard.recordCount'),
       value: expenses.length.toString(),
       icon: FileText,
       description: t('dashboard.attested'),
-      gradient: 'from-cyan-500 to-teal-500',
+      gradient: 'from-yellow-600 to-yellow-500',
+      color: 'text-yellow-400',
     },
   ];
 
@@ -161,7 +164,7 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-400 bg-clip-text text-transparent">
                 {t('dashboard.title')}
               </h1>
               <p className="text-muted-foreground">
@@ -171,7 +174,7 @@ export default function Dashboard() {
             <Button
               onClick={() => setShowAddModal(true)}
               size="lg"
-              className="bg-gradient-primary shadow-glow hover:scale-105 transition-transform"
+              className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-semibold shadow-gold hover:shadow-gold hover:scale-105 transition-all border border-yellow-400/30"
             >
               <Plus className="h-5 w-5 mr-2" />
               {t('dashboard.addExpense')}
@@ -188,16 +191,17 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <Card className="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur">
-                <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-5`} />
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+              <Card className="relative overflow-hidden border-yellow-500/20 bg-card/90 backdrop-blur glass">
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-10`} />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-500/5 to-transparent rounded-full blur-2xl" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                  <CardTitle className="text-sm font-medium text-foreground">
                     {stat.title}
                   </CardTitle>
-                  <stat.icon className="h-4 w-4 text-muted-foreground" />
+                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">{stat.value}</div>
+                <CardContent className="relative z-10">
+                  <div className={`text-3xl font-bold ${stat.color} mb-1`}>{stat.value}</div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {stat.description}
                   </p>

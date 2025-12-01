@@ -41,10 +41,17 @@ export default function Verify() {
   }, [paramCid]); // Only depend on paramCid, handleVerify is stable
 
   const handleVerify = async (cidToVerify?: string) => {
-    const cid = cidToVerify || inputCid;
+    const rawCid = cidToVerify || inputCid;
     
-    if (!cid) {
+    if (!rawCid) {
       toast.error('Please enter a CID');
+      return;
+    }
+
+    // Trim and validate CID
+    const cid = rawCid.trim();
+    if (!cid) {
+      toast.error('CID cannot be empty');
       return;
     }
 
@@ -63,14 +70,19 @@ export default function Verify() {
       setSubmissionHash(hash);
 
       console.log('🔍 [VERIFY] Fetching proof for CID:', cid);
-      console.log('🔍 [VERIFY] Backend URL:', `${BACKEND_URL}/api/proof/${cid}`);
+      
+      // URL encode the CID to handle special characters and spaces
+      const encodedCid = encodeURIComponent(cid);
+      const proofUrl = `${BACKEND_URL}/api/records/proof/${encodedCid}`;
+      console.log('🔍 [VERIFY] Backend URL:', proofUrl);
+      console.log('🔍 [VERIFY] Encoded CID:', encodedCid);
 
       // Fetch proof from backend with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
       try {
-        const response = await fetch(`${BACKEND_URL}/api/proof/${cid}`, {
+        const response = await fetch(proofUrl, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -125,11 +137,11 @@ export default function Verify() {
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 shadow-glow">
-              <ShieldCheck className="h-8 w-8 text-primary" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-yellow-500/10 shadow-gold border border-yellow-500/20">
+              <ShieldCheck className="h-8 w-8 text-yellow-500" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-yellow-500 via-amber-500 to-yellow-400 bg-clip-text text-transparent">
             {t('verify.title')}
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -138,9 +150,9 @@ export default function Verify() {
         </div>
 
         {/* Verification Form */}
-        <Card className="mb-8 border-border/50 bg-card/80 backdrop-blur">
+        <Card className="mb-8 border-yellow-500/20 bg-card/90 backdrop-blur glass">
           <CardHeader>
-            <CardTitle>Enter IPFS CID</CardTitle>
+            <CardTitle className="text-yellow-500/90">Enter IPFS CID</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
@@ -153,7 +165,7 @@ export default function Verify() {
               <Button
                 onClick={() => handleVerify()}
                 disabled={!inputCid || isLoading}
-                className="bg-gradient-primary"
+                className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-semibold shadow-gold hover:shadow-gold border border-yellow-400/30"
               >
                 {isLoading ? (
                   <>
@@ -178,13 +190,13 @@ export default function Verify() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <Card className="border-border/50 bg-card/80 backdrop-blur">
+            <Card className="border-yellow-500/20 bg-card/90 backdrop-blur glass">
               <CardContent className="pt-6">
                 <div className="text-center mb-6">
                   {isLoading ? (
                     <div>
                       <div className="flex justify-center mb-4">
-                        <Loader2 className="h-16 w-16 text-primary animate-spin" />
+                        <Loader2 className="h-16 w-16 text-yellow-500 animate-spin" />
                       </div>
                       <h3 className="text-2xl font-bold mb-2">Verifying...</h3>
                       <p className="text-muted-foreground">

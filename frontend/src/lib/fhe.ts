@@ -62,6 +62,10 @@ export interface EncryptedResult {
   ciphertextBlob: Uint8Array;
   ciphertextPreviewHash: string;
   publicKey: string;
+  // FHE handle and inputProof for contract calls (when using createEncryptedInput)
+  fheHandle?: string | Uint8Array | object; // The external handle for FHE.fromExternal()
+  inputProof?: string; // The attestation proof from relayer
+  usesFHE?: boolean; // Whether this used real FHE encryption (createEncryptedInput) or fallback
 }
 
 /**
@@ -98,6 +102,11 @@ export async function encryptExpenseWithFHE(
     }
     
     console.log("🔐 [ZAMA SDK] Contract address validated:", CONTRACT_ADDRESS);
+    
+    // Variables to store FHE handle and inputProof if createEncryptedInput succeeds
+    let fheHandle: string | Uint8Array | object | undefined;
+    let inputProof: string | undefined;
+    let usesFHE = false;
 
     // Get user address from wallet if not provided
     if (!userAddress && typeof window !== "undefined" && window.ethereum) {
@@ -235,11 +244,16 @@ export async function encryptExpenseWithFHE(
               encryptedAmount = new TextEncoder().encode(String(handle));
             }
             
-            // Store the inputProof separately for contract calls
-            // This will be used when calling contract functions with FHE.fromExternal()
+            // Store the handle and inputProof for contract calls
+            // These will be passed to storeEncryptedAmount() on the contract
+            fheHandle = handle;
+            inputProof = ciphertexts.inputProof || '';
+            usesFHE = true;
+            
             console.log("✅ [ZAMA SDK] Using ciphertext handle:", {
               handle: handle,
-              inputProofLength: ciphertexts.inputProof?.length || 0,
+              handleType: typeof handle,
+              inputProofLength: inputProof?.length || 0,
               encryptedAmountLength: encryptedAmount.length,
             });
           } else {
@@ -491,6 +505,9 @@ export async function encryptExpenseWithFHE(
       ciphertextBlob,
       ciphertextPreviewHash: previewHash,
       publicKey,
+      fheHandle: fheHandle,
+      inputProof: inputProof,
+      usesFHE: usesFHE,
     };
   } catch (error: any) {
     console.error("❌ [ZAMA SDK] Encryption failed:", error);

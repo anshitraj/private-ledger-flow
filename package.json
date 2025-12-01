@@ -6,27 +6,27 @@
   "workspaces": [
     "hardhat",
     "backend",
-    "private-ledger-flow"
+    "frontend"
   ],
   "scripts": {
-    "install:all": "npm install && cd hardhat && npm install && cd ../backend && npm install && cd ../private-ledger-flow && npm install && cd ..",
+    "install:all": "npm install && cd hardhat && npm install && cd ../backend && npm install && cd ../frontend && npm install && cd ..",
     "deploy": "cd hardhat && npx hardhat run scripts/deploy.ts --network sepolia",
     "verify": "cd hardhat && npx hardhat verify --network sepolia",
     "test": "npm run test:hardhat && npm run test:backend && npm run test:frontend",
     "test:hardhat": "cd hardhat && npm test",
     "test:backend": "cd backend && npm test",
-    "test:frontend": "cd private-ledger-flow && npm test",
+    "test:frontend": "cd frontend && npm test",
     "test:integration": "node scripts/run-integration-tests.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:hardhat": "cd hardhat && npx hardhat node",
     "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd private-ledger-flow && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
     "build": "npm run build:backend && npm run build:frontend",
     "build:backend": "cd backend && npm run build",
-    "build:frontend": "cd private-ledger-flow && npm run build",
+    "build:frontend": "cd frontend && npm run build",
     "lint": "npm run lint:backend && npm run lint:frontend",
     "lint:backend": "cd backend && npm run lint",
-    "lint:frontend": "cd private-ledger-flow && npm run lint"
+    "lint:frontend": "cd frontend && npm run lint"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
