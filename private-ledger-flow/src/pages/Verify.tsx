@@ -37,7 +37,8 @@ export default function Verify() {
       setInputCid(paramCid);
       handleVerify(paramCid);
     }
-  }, [paramCid]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramCid]); // Only depend on paramCid, handleVerify is stable
 
   const handleVerify = async (cidToVerify?: string) => {
     const cid = cidToVerify || inputCid;
@@ -61,22 +62,54 @@ export default function Verify() {
       const hash = computeSubmissionHash(cid);
       setSubmissionHash(hash);
 
-      // Fetch proof from backend
-      const response = await fetch(`${BACKEND_URL}/api/proof/${cid}`);
-      const result = await response.json();
+      console.log('🔍 [VERIFY] Fetching proof for CID:', cid);
+      console.log('🔍 [VERIFY] Backend URL:', `${BACKEND_URL}/api/proof/${cid}`);
 
-      if (result.success && result.proof) {
-        setIsVerified(true);
-        setProofData(result.proof);
-        toast.success('Attestation verified!');
-      } else {
-        setIsVerified(false);
-        toast.error('Attestation not found');
+      // Fetch proof from backend with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/proof/${cid}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        console.log('🔍 [VERIFY] Response status:', response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('🔍 [VERIFY] Error response:', errorText);
+          throw new Error(`Backend error: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('🔍 [VERIFY] Result:', result);
+
+        if (result.success && result.proof) {
+          setIsVerified(true);
+          setProofData(result.proof);
+          toast.success('Attestation verified!');
+        } else {
+          setIsVerified(false);
+          toast.error('Attestation not found');
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Request timeout - backend may be unreachable');
+        }
+        throw fetchError;
       }
     } catch (error: any) {
-      console.error('Verification error:', error);
+      console.error('❌ [VERIFY] Verification error:', error);
       setIsVerified(false);
-      toast.error('Failed to verify attestation');
+      toast.error(`Failed to verify: ${error.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
