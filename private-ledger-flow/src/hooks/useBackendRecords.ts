@@ -26,8 +26,11 @@ export function useBackendRecords() {
       try {
         // Add timestamp to bust cache
         const timestamp = Date.now();
-        console.log('📡 Fetching backend records from:', `${BACKEND_URL}/api/records`);
-        const response = await fetch(`${BACKEND_URL}/api/records?limit=50&_t=${timestamp}`, {
+        const url = `${BACKEND_URL}/api/records?limit=50&_t=${timestamp}`;
+        console.log('📡 [BACKEND] Fetching records from:', url);
+        console.log('📡 [BACKEND] BACKEND_URL env:', BACKEND_URL);
+        
+        const response = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -35,24 +38,38 @@ export function useBackendRecords() {
             'Pragma': 'no-cache',
           },
           cache: 'no-store', // Force no cache
+          mode: 'cors', // Explicitly set CORS mode
         });
         
+        console.log('📡 [BACKEND] Response status:', response.status, response.statusText);
+        console.log('📡 [BACKEND] Response headers:', Object.fromEntries(response.headers.entries()));
+        
         if (!response.ok) {
-          console.error('Backend responded with status:', response.status);
-          throw new Error(`Backend API error: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          console.error('❌ [BACKEND] Error response:', errorText);
+          throw new Error(`Backend API error: ${response.status} ${response.statusText} - ${errorText}`);
         }
         
         const result = await response.json();
-        console.log('📦 Backend records received:', result.count, 'records');
+        console.log('✅ [BACKEND] Records received:', result.count, 'records');
+        console.log('✅ [BACKEND] Full result:', result);
         
         if (result.success && result.records) {
+          console.log('✅ [BACKEND] Returning', result.records.length, 'records');
           return result.records;
         }
         
+        console.warn('⚠️ [BACKEND] No records in response:', result);
         return [];
-      } catch (error) {
-        console.error('❌ Error fetching backend records:', error);
-        return [];
+      } catch (error: any) {
+        console.error('❌ [BACKEND] Error fetching backend records:', error);
+        console.error('❌ [BACKEND] Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        });
+        // Don't return empty array on network errors - let React Query handle retry
+        throw error;
       }
     },
     refetchOnWindowFocus: true, // Refetch on focus to get latest data
@@ -60,8 +77,8 @@ export function useBackendRecords() {
     refetchOnReconnect: true, // Refetch when network reconnects
     staleTime: 0, // Consider data stale immediately
     gcTime: 0, // Don't cache data
-    retry: 2, // Retry twice on failure
-    retryDelay: 1000, // Wait 1 second between retries
+    retry: 3, // Retry 3 times on failure
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 }
 
