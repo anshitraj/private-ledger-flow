@@ -5,6 +5,7 @@ import rateLimit from "express-rate-limit";
 import { recordsRouter } from "./routes/records";
 import { ipfsRouter } from "./routes/ipfs";
 import { coprocRouter } from "./routes/coproc";
+import { ethListener } from "./services/ethListener";
 
 export const app = express();
 
@@ -63,8 +64,9 @@ if (process.env.VERCEL !== "1" && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
     ethListener.start().catch((err) => {
       console.warn("⚠️ Ethereum listener failed to start (non-critical):", err.message);
     });
-  } catch (err: any) {
-    console.warn("⚠️ Ethereum listener initialization skipped:", err.message);
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.warn("⚠️ Ethereum listener initialization skipped:", error.message);
   }
 }
 
