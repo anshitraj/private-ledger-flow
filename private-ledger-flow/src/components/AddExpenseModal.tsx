@@ -99,6 +99,18 @@ export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange 
         const saveToBackend = async () => {
           try {
             console.log('💾 [BACKEND] Saving expense to database:', confirmedExpense.cid);
+            console.log('💾 [BACKEND] Backend URL:', BACKEND_URL);
+            console.log('💾 [BACKEND] Request payload:', {
+              userAddress: address,
+              cid: confirmedExpense.cid,
+              submissionHash: confirmedExpense.submissionHash,
+              txHash: receipt.transactionHash,
+              blockNumber: receipt.blockNumber?.toString() || null,
+              category: confirmedExpense.category,
+              note: confirmedExpense.note || null,
+              timestamp: confirmedExpense.timestamp,
+            });
+            
             const response = await fetch(`${BACKEND_URL}/api/records`, {
               method: 'POST',
               headers: {
@@ -116,8 +128,12 @@ export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange 
               }),
             });
             
+            console.log('💾 [BACKEND] Response status:', response.status);
+            
             if (!response.ok) {
-              throw new Error(`Backend error: ${response.status}`);
+              const errorText = await response.text();
+              console.error('❌ [BACKEND] Error response:', errorText);
+              throw new Error(`Backend error: ${response.status} - ${errorText}`);
             }
             
             const result = await response.json();
@@ -127,11 +143,17 @@ export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange 
             await queryClient.invalidateQueries({ queryKey: ['backend-records'] });
             
             toast.success('Transaction confirmed and saved!');
-          } catch (error) {
+          } catch (error: any) {
             console.error('❌ [BACKEND] Failed to save expense:', error);
-            // Don't show error to user as blockchain transaction succeeded
-            // The sync endpoint can recover this later
-            toast.success('Transaction confirmed! (Saving to database...)');
+            console.error('❌ [BACKEND] Error details:', {
+              message: error.message,
+              stack: error.stack,
+              backendUrl: BACKEND_URL,
+            });
+            
+            // Show error to user so they know something went wrong
+            toast.error(`Failed to save to database: ${error.message}. Check console for details.`);
+            
             // Still invalidate to refetch in case it was saved
             queryClient.invalidateQueries({ queryKey: ['backend-records'] });
           }
