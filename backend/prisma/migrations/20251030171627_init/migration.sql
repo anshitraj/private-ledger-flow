@@ -1,17 +1,19 @@
 -- CreateTable
 CREATE TABLE "expenses" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "userAddress" TEXT NOT NULL,
     "cid" TEXT NOT NULL,
     "submissionHash" TEXT NOT NULL,
     "txHash" TEXT NOT NULL,
     "blockNumber" TEXT,
-    "timestamp" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "category" TEXT,
     "note" TEXT,
     "status" TEXT NOT NULL DEFAULT 'pending',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "expenses_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
