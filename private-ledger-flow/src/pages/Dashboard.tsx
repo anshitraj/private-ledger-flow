@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { motion } from 'framer-motion';
 import { Wallet, TrendingUp, FileText, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ExpenseCard } from '@/components/ExpenseCard';
 import { AddExpenseModal } from '@/components/AddExpenseModal';
 import { EmptyState } from '@/components/EmptyState';
@@ -21,7 +22,16 @@ export default function Dashboard() {
   const connectButtonRef = useRef<HTMLDivElement>(null);
 
   // Convert backend records to expenses and merge with local state
+  // Use useMemo to prevent unnecessary recalculations
+  const backendRecordsKey = useMemo(() => {
+    return JSON.stringify(backendRecords.map(r => `${r.cid}-${r.txHash}`).sort());
+  }, [backendRecords]);
+  
   useEffect(() => {
+    if (backendRecords.length === 0 && expenses.length === 0) {
+      return; // Don't update if both are empty
+    }
+    
     const convertedExpenses: Expense[] = backendRecords.map(record => ({
       id: record.cid,
       amount: 0, // encrypted, not visible
@@ -41,9 +51,19 @@ export default function Dashboard() {
       convertedExpenses.forEach(recordExpense => {
         existingMap.set(recordExpense.cid, recordExpense);
       });
-      return Array.from(existingMap.values());
+      const newExpenses = Array.from(existingMap.values());
+      
+      // Only update if the content actually changed
+      const prevKey = JSON.stringify(prev.map(e => `${e.cid}-${e.txHash}`).sort());
+      const newKey = JSON.stringify(newExpenses.map(e => `${e.cid}-${e.txHash}`).sort());
+      
+      if (prevKey === newKey && prev.length === newExpenses.length) {
+        return prev; // Return same reference if nothing changed
+      }
+      
+      return newExpenses;
     });
-  }, [backendRecords]);
+  }, [backendRecordsKey]); // Use stable key instead of array reference
 
   const handleAddExpense = (newExpense: Expense) => {
     setExpenses(prev => {
@@ -128,12 +148,24 @@ export default function Dashboard() {
       >
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            {t('dashboard.title')}
-          </h1>
-          <p className="text-muted-foreground">
-            Track your private expenses with homomorphic encryption
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                {t('dashboard.title')}
+              </h1>
+              <p className="text-muted-foreground">
+                Track your private expenses with homomorphic encryption
+              </p>
+            </div>
+            <Button
+              onClick={() => setShowAddModal(true)}
+              size="lg"
+              className="bg-gradient-primary shadow-glow hover:scale-105 transition-transform"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              {t('dashboard.addExpense')}
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -199,7 +231,11 @@ export default function Dashboard() {
         </div>
       </motion.div>
 
-      <AddExpenseModal onSuccess={handleAddExpense} />
+      <AddExpenseModal 
+        onSuccess={handleAddExpense} 
+        open={showAddModal}
+        onOpenChange={setShowAddModal}
+      />
     </div>
   );
 }

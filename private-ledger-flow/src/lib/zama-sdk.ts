@@ -274,11 +274,25 @@ export async function getZamaInstance(): Promise<Instance> {
       await waitForSDK();
       const sdk = getSDK();
       
-      // Create instance with Sepolia configuration
+      // Get relayer URL from environment or use official Zama testnet relayer
+      const relayerUrl = import.meta.env.VITE_RELAYER_URL || 'https://relayer.testnet.zama.org/';
+      
+      // Create instance with Sepolia configuration, overriding relayer URL
+      // Try multiple possible property names for relayer URL
+      const baseConfig = sdk.SepoliaConfig || {};
       const config = {
-        ...sdk.SepoliaConfig,
+        ...baseConfig,
         network: window.ethereum,
+        // Override relayer URL to use official Zama testnet relayer
+        // Try multiple property names as SDK might use different ones
+        relayerUrl: relayerUrl,
+        relayer: relayerUrl,
+        relayerEndpoint: relayerUrl,
+        gatewayUrl: relayerUrl,
       };
+
+      console.log('🔐 [ZAMA SDK] Using relayer URL:', relayerUrl);
+      console.log('🔐 [ZAMA SDK] Base config keys:', Object.keys(baseConfig));
 
       const instance = await sdk.createInstance(config);
       sdkInstance = instance;

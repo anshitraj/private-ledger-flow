@@ -30,12 +30,16 @@ import type { Expense } from '@/types/expense';
 
 interface AddExpenseModalProps {
   onSuccess?: (expense: Expense) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function AddExpenseModal({ onSuccess }: AddExpenseModalProps) {
+export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange }: AddExpenseModalProps) {
   const { t } = useTranslation();
   const { address } = useAccount();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setOpen = onOpenChange || setInternalOpen;
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'encrypting' | 'uploading' | 'attesting'>('form');
   const [pendingExpense, setPendingExpense] = useState<Expense | null>(null);
@@ -242,14 +246,7 @@ export function AddExpenseModal({ onSuccess }: AddExpenseModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          size="lg"
-          className="fixed bottom-20 right-6 md:bottom-6 h-14 w-14 rounded-full bg-gradient-primary shadow-glow hover:scale-105 transition-transform z-40"
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-      </DialogTrigger>
+      {/* Floating action button removed - now controlled from Dashboard */}
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-2xl">{t('expense.add')}</DialogTitle>

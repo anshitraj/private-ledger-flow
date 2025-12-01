@@ -121,7 +121,12 @@ class EthListener {
         currentBlock
       );
       
-      return events[0]?.hash || null;
+      const event = events[0];
+      if (event) {
+        // In ethers v6, both Log and EventLog have transactionHash
+        return (event as ethers.Log).transactionHash || null;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -166,8 +171,10 @@ class EthListener {
       console.log(`Found ${events.length} events to process`);
       
       for (const event of events) {
-        const { user, submissionHash, cid, timestamp, txMeta } = event.args as any;
-        await this.handleExpenseAttested(user, submissionHash, cid, timestamp, txMeta);
+        if ('args' in event && event.args) {
+          const { user, submissionHash, cid, timestamp, txMeta } = event.args as any;
+          await this.handleExpenseAttested(user, submissionHash, cid, timestamp, txMeta);
+        }
       }
     } catch (error: any) {
       console.error("Error processing recent events:", error);

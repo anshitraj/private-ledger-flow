@@ -61,9 +61,25 @@ export const SEPOLIA_CHAIN_NAME = 'Sepolia';
 export const SEPOLIA_RPC_URL = import.meta.env.VITE_SEPOLIA_RPC_URL || 'https://rpc.sepolia.org';
 
 /**
+ * Validate if a string is a valid Ethereum transaction hash
+ */
+export function isValidTxHash(txHash: string | undefined | null): boolean {
+  if (!txHash) return false;
+  if (txHash === 'pending') return false;
+  if (!txHash.startsWith('0x')) return false;
+  if (txHash.length !== 66) return false;
+  // Check if it's a valid hex string
+  return /^0x[a-fA-F0-9]{64}$/.test(txHash);
+}
+
+/**
  * Block explorer URL helper
+ * Validates transaction hash before creating URL
  */
 export function getSepoliaExplorerUrl(txHash: string): string {
+  if (!isValidTxHash(txHash)) {
+    throw new Error(`Invalid transaction hash: ${txHash}`);
+  }
   return `https://sepolia.etherscan.io/tx/${txHash}`;
 }
 

@@ -5,9 +5,10 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import type { Expense } from '@/types/expense';
-import { getSepoliaExplorerUrl, getSepoliaAddressUrl } from '@/lib/contract';
+import { getSepoliaExplorerUrl, getSepoliaAddressUrl, isValidTxHash } from '@/lib/contract';
 import { getIPFSUrl } from '@/lib/ipfs';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface ExpenseCardProps {
   expense: Expense;
@@ -121,12 +122,21 @@ export function ExpenseCard({ expense, onDecrypt, showDecrypt = false }: Expense
               )}
 
               <div className="flex gap-1">
-                {expense.txHash && (
+                {isValidTxHash(expense.txHash) && (
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    onClick={() => window.open(getSepoliaExplorerUrl(expense.txHash!), '_blank')}
+                    onClick={() => {
+                      try {
+                        const url = getSepoliaExplorerUrl(expense.txHash!);
+                        window.open(url, '_blank');
+                      } catch (error) {
+                        console.error('Invalid transaction hash:', error);
+                        toast.error('Invalid transaction hash');
+                      }
+                    }}
+                    title="View on Etherscan"
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Button>

@@ -9,14 +9,15 @@
     "verify": "hardhat run scripts/verify.ts"
   },
   "devDependencies": {
+    "@fhevm/solidity": "^0.8.0",
     "@nomicfoundation/hardhat-toolbox": "^4.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.0",
     "@types/node": "^20.10.0",
     "dotenv": "^16.3.1",
-    "hardhat": "^2.19.0"
+    "hardhat": "^2.19.0",
+    "solc": "^0.8.24"
   },
   "dependencies": {
     "ethers": "^6.9.0"
   }
 }
-

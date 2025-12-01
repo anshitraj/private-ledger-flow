@@ -906,14 +906,39 @@ export async function decryptWithFHE(
           );
 
           // Method 1: Try userDecrypt (for user-owned encrypted data)
+          // This goes through the relayer and may return attestations/signatures
           if (typeof (instance as any).userDecrypt === "function") {
-            console.log("🔓 [ZAMA SDK] Trying userDecrypt method...");
+            console.log("🔓 [ZAMA SDK] Trying userDecrypt method (with relayer attestation)...");
             try {
               // userDecrypt typically takes: (contractAddress, ciphertext)
-              decrypted = await (instance as any).userDecrypt(
+              // This should go through the relayer and may return attestation data
+              const decryptResult = await (instance as any).userDecrypt(
                 CONTRACT_ADDRESS,
                 normalizedPayload
               );
+              
+              // Check if result includes attestation/signature
+              if (decryptResult && typeof decryptResult === 'object') {
+                console.log("🔍 [ZAMA SDK] userDecrypt result structure:", {
+                  hasAttestation: !!decryptResult.attestation,
+                  hasSignature: !!decryptResult.signature,
+                  hasProof: !!decryptResult.proof,
+                  keys: Object.keys(decryptResult),
+                  resultType: typeof decryptResult,
+                });
+                
+                // Extract decrypted value and attestation if present
+                decrypted = decryptResult.value || decryptResult.result || decryptResult;
+                if (decryptResult.attestation || decryptResult.signature) {
+                  console.log("✅ [ZAMA SDK] userDecrypt returned attestation/signature:", {
+                    hasAttestation: !!decryptResult.attestation,
+                    hasSignature: !!decryptResult.signature,
+                  });
+                }
+              } else {
+                decrypted = decryptResult;
+              }
+              
               decryptionMethod = "userDecrypt";
               console.log("✅ [ZAMA SDK] userDecrypt succeeded");
             } catch (userDecryptError: any) {
@@ -925,12 +950,18 @@ export async function decryptWithFHE(
           }
 
           // Method 2: Try publicDecrypt (for publicly decryptable data)
+          // NOTE: publicDecrypt is a LOCAL method and does NOT go through the relayer,
+          // so it will NOT return signatures/attestations like encryption does.
+          // For attestations, use userDecrypt (Method 1) which may go through the relayer.
           if (
             !decrypted &&
             typeof (instance as any).publicDecrypt === "function"
           ) {
             console.log(
-              "🔓 [ZAMA SDK] Using publicDecrypt with normalized payload..."
+              "🔓 [ZAMA SDK] Using publicDecrypt (LOCAL - no relayer attestation)..."
+            );
+            console.warn(
+              "⚠️ [ZAMA SDK] publicDecrypt is local-only and does not provide signatures/attestations."
             );
 
             try {
