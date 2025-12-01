@@ -27,6 +27,9 @@ app.use(cors({
     "http://localhost:8081", 
     "http://localhost:3000",
     /^http:\/\/localhost:\d+$/, // Allow any localhost port
+    /^https:\/\/.*\.vercel\.app$/, // Allow Vercel deployments
+    /^https:\/\/.*\.railway\.app$/, // Allow Railway deployments
+    /^https:\/\/.*\.onrender\.com$/, // Allow Render deployments
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -52,6 +55,18 @@ app.get("/api/health", (req, res) => {
     version: "1.0.0",
   });
 });
+
+// Initialize Ethereum listener (only in non-serverless environments)
+// In serverless, we skip the persistent listener
+if (process.env.VERCEL !== "1" && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  try {
+    ethListener.start().catch((err) => {
+      console.warn("⚠️ Ethereum listener failed to start (non-critical):", err.message);
+    });
+  } catch (err: any) {
+    console.warn("⚠️ Ethereum listener initialization skipped:", err.message);
+  }
+}
 
 // API routes
 app.use("/api/records", recordsRouter);
