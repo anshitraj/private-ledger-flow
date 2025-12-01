@@ -3,27 +3,26 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Expense {
-  id              Int      @id @default(autoincrement())
-  userAddress     String
-  cid             String   @unique
-  submissionHash  String   @unique
-  txHash          String
-  blockNumber     String?
-  timestamp       DateTime @default(now())
-  category        String?
-  note            String?
-  status          String   @default("pending") // pending, confirmed, failed
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  userAddress    String
+  cid            String   @unique
+  submissionHash String   @unique
+  txHash         String
+  blockNumber    String?
+  timestamp      DateTime @default(now())
+  category       String?
+  note           String?
+  status         String   @default("pending") // pending, confirmed, failed
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([userAddress])
   @@index([timestamp])
   @@index([category])
   @@map("expenses")
 }
-

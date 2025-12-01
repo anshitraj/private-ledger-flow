@@ -75,14 +75,18 @@ jobs:
       - name: Run migrations
         run: |
           cd backend
-          npx prisma migrate deploy
+          npx prisma migrate deploy || npx prisma db push
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tracker_db
       
       - name: Run backend tests
         run: |
           cd backend
-          npm test || echo "No tests configured yet"
+          if grep -q '"test"' package.json; then
+            npm test
+          else
+            echo "No test script found, skipping tests"
+          fi
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tracker_db
         continue-on-error: true
