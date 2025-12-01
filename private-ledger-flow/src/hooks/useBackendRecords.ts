@@ -24,13 +24,17 @@ export function useBackendRecords() {
     queryKey: ['backend-records'],
     queryFn: async (): Promise<BackendRecord[]> => {
       try {
+        // Add timestamp to bust cache
+        const timestamp = Date.now();
         console.log('📡 Fetching backend records from:', `${BACKEND_URL}/api/records`);
-        const response = await fetch(`${BACKEND_URL}/api/records?limit=50`, {
+        const response = await fetch(`${BACKEND_URL}/api/records?limit=50&_t=${timestamp}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
           },
-          cache: 'no-cache',
+          cache: 'no-store', // Force no cache
         });
         
         if (!response.ok) {
@@ -51,9 +55,11 @@ export function useBackendRecords() {
         return [];
       }
     },
-    refetchOnWindowFocus: false, // Prevent refetch on focus
+    refetchOnWindowFocus: true, // Refetch on focus to get latest data
     refetchOnMount: true, // Always fetch on mount
     refetchOnReconnect: true, // Refetch when network reconnects
+    staleTime: 0, // Consider data stale immediately
+    gcTime: 0, // Don't cache data
     retry: 2, // Retry twice on failure
     retryDelay: 1000, // Wait 1 second between retries
   });

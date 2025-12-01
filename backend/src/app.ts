@@ -5,9 +5,13 @@ import rateLimit from "express-rate-limit";
 import { recordsRouter } from "./routes/records";
 import { ipfsRouter } from "./routes/ipfs";
 import { coprocRouter } from "./routes/coproc";
+import { migrateRouter } from "./routes/migrate";
 import { ethListener } from "./services/ethListener";
 
 export const app = express();
+
+// Trust proxy (required for Vercel and other platforms behind proxies)
+app.set('trust proxy', true);
 
 // Security middleware
 app.use(helmet({
@@ -57,6 +61,8 @@ app.get("/", (req, res) => {
     endpoints: {
       health: "/api/health",
       records: "/api/records",
+      sync: "POST /api/records/sync - Sync blockchain events to database",
+      migrate: "POST /api/migrate - Run database migrations",
       ipfs: "/api/ipfs",
       coproc: "/api/coproc"
     }
@@ -89,6 +95,7 @@ if (process.env.VERCEL !== "1" && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
 app.use("/api/records", recordsRouter);
 app.use("/api/ipfs", ipfsRouter);
 app.use("/api/coproc", coprocRouter);
+app.use("/api/migrate", migrateRouter);
 
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

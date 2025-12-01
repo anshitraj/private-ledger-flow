@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus, Lock, Upload, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { keccak256, toBytes, hexToBytes } from 'viem';
@@ -27,6 +28,8 @@ import { encryptExpenseWithFHE } from '@/lib/fhe';
 import { uploadToIPFS } from '@/lib/ipfs';
 import { CONTRACT_ADDRESS, CONTRACT_ABI, computeSubmissionHash } from '@/lib/contract';
 import type { Expense } from '@/types/expense';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 interface AddExpenseModalProps {
   onSuccess?: (expense: Expense) => void;
@@ -81,7 +84,6 @@ export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange 
     if (receipt && receipt.transactionHash !== receiptProcessedRef.current) {
       console.log('✅ [CONTRACT] Transaction confirmed:', receipt.transactionHash);
       receiptProcessedRef.current = receipt.transactionHash;
-      toast.success('Transaction confirmed!');
       
       // Use ref to get latest pendingExpense without dependency
       const currentPending = pendingExpenseRef.current;
@@ -91,6 +93,50 @@ export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange 
           txHash: receipt.transactionHash,
           status: 'attested' as const
         };
+        
+        // Save to backend database
+        const saveToBackend = async () => {
+          try {
+            console.log('💾 [BACKEND] Saving expense to database:', confirmedExpense.cid);
+            const response = await fetch(`${BACKEND_URL}/api/records`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userAddress: address,
+                cid: confirmedExpense.cid,
+                submissionHash: confirmedExpense.submissionHash,
+                txHash: receipt.transactionHash,
+                blockNumber: receipt.blockNumber?.toString() || null,
+                category: confirmedExpense.category,
+                note: confirmedExpense.note || null,
+                timestamp: confirmedExpense.timestamp,
+              }),
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Backend error: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('✅ [BACKEND] Expense saved to database:', result);
+            
+            // Invalidate and refetch records to show new expense immediately
+            await queryClient.invalidateQueries({ queryKey: ['backend-records'] });
+            
+            toast.success('Transaction confirmed and saved!');
+          } catch (error) {
+            console.error('❌ [BACKEND] Failed to save expense:', error);
+            // Don't show error to user as blockchain transaction succeeded
+            // The sync endpoint can recover this later
+            toast.success('Transaction confirmed! (Saving to database...)');
+            // Still invalidate to refetch in case it was saved
+            queryClient.invalidateQueries({ queryKey: ['backend-records'] });
+          }
+        };
+        
+        saveToBackend();
         onSuccess?.(confirmedExpense);
       }
       
@@ -101,7 +147,7 @@ export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange 
       setLoading(false);
       setOpen(false);
     }
-  }, [receipt, hash]); // Only depend on receipt and hash
+  }, [receipt, hash, address]); // Only depend on receipt, hash, and address
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
