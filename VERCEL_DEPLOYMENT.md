@@ -43,10 +43,13 @@ DATABASE_URL=postgresql://user:password@host:port/database
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_INFURA_KEY
 CONTRACT_ADDRESS=0xYourContractAddressHere
 
-# IPFS (Pinata)
+# IPFS (Pinata) - REQUIRED for IPFS uploads
 PINATA_API_KEY=your_pinata_api_key
 PINATA_SECRET_API_KEY=your_pinata_secret_key
 IPFS_GATEWAY_URL=https://gateway.pinata.cloud/ipfs
+
+# Note: Without Pinata keys, backend will use mock CIDs (testing only)
+# Get keys from: https://pinata.cloud/
 
 # Coprocessor (optional)
 COPROCESSOR_URL=https://your-coprocessor-url
@@ -107,8 +110,12 @@ VITE_BACKEND_URL=https://your-backend.vercel.app
 2. **Database**: If using a database, make sure it's accessible from Vercel
    - Consider using Vercel Postgres or external services like Supabase/Railway
 
-3. **IPFS**: Pinata requires API keys for uploads
-   - Get keys from [Pinata](https://pinata.cloud)
+3. **IPFS/Pinata**: 
+   - **Backend** needs Pinata API keys for uploading encrypted data to IPFS
+   - Get keys from [Pinata](https://pinata.cloud) (free account available)
+   - Add `PINATA_API_KEY` and `PINATA_SECRET_API_KEY` to backend environment
+   - **Frontend** only needs `VITE_IPFS_GATEWAY` for reading from IPFS (no keys needed)
+   - Without Pinata keys, backend will use mock CIDs (for testing only)
 
 4. **RPC URLs**: Use reliable RPC providers
    - Infura, Alchemy, or QuickNode
