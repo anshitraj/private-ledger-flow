@@ -48,6 +48,21 @@ const limiter = rateLimit({
 });
 app.use("/api/", limiter);
 
+// Root path handler
+app.get("/", (req, res) => {
+  res.json({
+    message: "Private Expense Tracker Backend API",
+    status: "ok",
+    version: "1.0.0",
+    endpoints: {
+      health: "/api/health",
+      records: "/api/records",
+      ipfs: "/api/ipfs",
+      coproc: "/api/coproc"
+    }
+  });
+});
+
 // Health check
 app.get("/api/health", (req, res) => {
   res.json({
