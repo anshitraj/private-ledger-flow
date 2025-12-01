@@ -1,0 +1,24 @@
+# ============================================
+# FRONTEND ENVIRONMENT VARIABLES FOR VERCEL
+# Copy and paste these into Vercel Dashboard
+# ============================================
+
+VITE_BACKEND_URL=https://private-ledger-flow-backend.vercel.app
+VITE_CONTRACT_ADDRESS=0xbdfa7Da9449AA1a7a779DC1ceA671a96aAB3E57E
+VITE_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/2_K4z_-b41_9ZyQTWeQIZ
+VITE_RELAYER_URL=https://relayer.testnet.zama.org/
+VITE_WALLETCONNECT_PROJECT_ID=53cdde5cc0f1e05662956d670abc5a8c
+VITE_IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs/
+
+# ============================================
+# INSTRUCTIONS:
+# ============================================
+# 1. In Vercel "New Project" page
+# 2. Click "Environment Variables" to expand
+# 3. Click "Add" for each variable above
+# 4. Copy Name and Value exactly as shown
+# 5. Select "All Environments" for each
+# 6. Click "Save" after adding each one
+# 7. Then click "Deploy" button
+# ============================================
+
