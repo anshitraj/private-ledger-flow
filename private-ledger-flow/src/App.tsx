@@ -20,7 +20,15 @@ import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true,
+      retry: 2,
+      staleTime: 0,
+    },
+  },
+});
 
 // Initialize Zama SDK on app startup
 const AppInit = () => {

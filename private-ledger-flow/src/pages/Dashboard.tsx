@@ -16,20 +16,30 @@ import type { Expense } from '@/types/expense';
 export default function Dashboard() {
   const { t } = useTranslation();
   const { address, isConnected } = useAccount();
-  const { data: backendRecords = [], isLoading } = useBackendRecords();
+  const { data: backendRecords = [], isLoading, error: backendError } = useBackendRecords();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const connectButtonRef = useRef<HTMLDivElement>(null);
+  
+  // Log errors for debugging
+  useEffect(() => {
+    if (backendError) {
+      console.error('❌ [DASHBOARD] Backend error:', backendError);
+    }
+  }, [backendError]);
 
   // Convert backend records to expenses and merge with local state
   useEffect(() => {
-    console.log('🔄 [DASHBOARD] Backend records changed:', backendRecords.length, 'records');
-    console.log('🔄 [DASHBOARD] isLoading:', isLoading);
-    console.log('🔄 [DASHBOARD] Current expenses:', expenses.length);
+    console.log('🔄 [DASHBOARD] Effect triggered - Backend records:', backendRecords.length, 'isLoading:', isLoading);
     
     if (isLoading) {
       console.log('⏳ [DASHBOARD] Still loading, skipping update');
       return; // Don't update while loading
+    }
+    
+    if (backendRecords.length === 0) {
+      console.log('⚠️ [DASHBOARD] No backend records, keeping current expenses');
+      return; // Don't clear expenses if backend returns empty (might be error)
     }
     
     const convertedExpenses: Expense[] = backendRecords.map(record => ({
@@ -47,7 +57,7 @@ export default function Dashboard() {
     
     console.log('✅ [DASHBOARD] Converted', convertedExpenses.length, 'expenses from backend records');
     
-    // Merge backend records with local state (preserve local optimistic updates)
+    // Always update expenses from backend records
     setExpenses(prev => {
       const existingMap = new Map(prev.map(e => [e.cid, e]));
       convertedExpenses.forEach(recordExpense => {
@@ -59,6 +69,7 @@ export default function Dashboard() {
         prev: prev.length,
         new: newExpenses.length,
         backend: backendRecords.length,
+        cids: newExpenses.map(e => e.cid).slice(0, 3),
       });
       
       return newExpenses;

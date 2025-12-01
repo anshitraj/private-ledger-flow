@@ -1,9 +1,8 @@
 import { Router } from "express";
-import { PrismaClient } from "@prisma/client";
 import { ethListener } from "../services/ethListener";
+import { prisma, executeWithRetry } from "../db/prisma";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * GET /api/records
@@ -25,11 +24,14 @@ router.get("/", async (req, res) => {
     if (category) where.category = category as string;
     if (userAddress) where.userAddress = (userAddress as string).toLowerCase();
     
-    const records = await prisma.expense.findMany({
-      where,
-      orderBy: { timestamp: "desc" },
-      take: parseInt(limit as string),
-    });
+    // Use executeWithRetry to handle "prepared statement already exists" errors
+    const records = await executeWithRetry(() =>
+      prisma.expense.findMany({
+        where,
+        orderBy: { timestamp: "desc" },
+        take: parseInt(limit as string),
+      })
+    );
     
     res.json({
       success: true,
@@ -52,9 +54,12 @@ router.get("/:cid", async (req, res) => {
   try {
     const { cid } = req.params;
     
-    const record = await prisma.expense.findUnique({
-      where: { cid },
-    });
+    // Use executeWithRetry to handle "prepared statement already exists" errors
+    const record = await executeWithRetry(() =>
+      prisma.expense.findUnique({
+        where: { cid },
+      })
+    );
     
     if (!record) {
       return res.status(404).json({
@@ -84,9 +89,12 @@ router.get("/proof/:cid", async (req, res) => {
   try {
     const { cid } = req.params;
     
-    const record = await prisma.expense.findUnique({
-      where: { cid },
-    });
+    // Use executeWithRetry to handle "prepared statement already exists" errors
+    const record = await executeWithRetry(() =>
+      prisma.expense.findUnique({
+        where: { cid },
+      })
+    );
     
     if (!record) {
       return res.status(404).json({
@@ -139,25 +147,28 @@ router.post("/", async (req, res) => {
     console.log(`💾 Saving expense record: ${cid} from ${userAddress}`);
     
     // Upsert record (create or update if exists)
-    const record = await prisma.expense.upsert({
-      where: { cid },
-      create: {
-        userAddress: userAddress.toLowerCase(),
-        cid,
-        submissionHash,
-        txHash,
-        blockNumber: blockNumber || null,
-        timestamp: timestamp ? new Date(timestamp) : new Date(),
-        category: category || null,
-        note: note || null,
-        status: "confirmed",
-      },
-      update: {
-        txHash,
-        blockNumber: blockNumber || null,
-        status: "confirmed",
-      },
-    });
+    // Use executeWithRetry to handle "prepared statement already exists" errors
+    const record = await executeWithRetry(() =>
+      prisma.expense.upsert({
+        where: { cid },
+        create: {
+          userAddress: userAddress.toLowerCase(),
+          cid,
+          submissionHash,
+          txHash,
+          blockNumber: blockNumber || null,
+          timestamp: timestamp ? new Date(timestamp) : new Date(),
+          category: category || null,
+          note: note || null,
+          status: "confirmed",
+        },
+        update: {
+          txHash,
+          blockNumber: blockNumber || null,
+          status: "confirmed",
+        },
+      })
+    );
     
     console.log(`✅ Expense record saved: ${cid}`);
     

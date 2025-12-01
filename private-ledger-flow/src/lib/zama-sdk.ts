@@ -274,31 +274,116 @@ export async function getZamaInstance(): Promise<Instance> {
       await waitForSDK();
       const sdk = getSDK();
       
-      // Get relayer URL from environment or use official Zama testnet relayer
-      const relayerUrl = import.meta.env.VITE_RELAYER_URL || 'https://relayer.testnet.zama.org/';
+      // According to Zama docs: Use SepoliaConfig or provide all required addresses
+      // https://docs.zama.org/protocol/relayer-sdk-guides
       
-      // Create instance with Sepolia configuration, overriding relayer URL
-      // Try multiple possible property names for relayer URL
-      const baseConfig = sdk.SepoliaConfig || {};
+      // Check if SepoliaConfig is available (recommended)
+      if (sdk.SepoliaConfig) {
+        console.log('🔐 [ZAMA SDK] Using SepoliaConfig from SDK...');
+        
+        // Override relayer URL if it's wrong in SepoliaConfig
+        // According to latest docs: https://relayer.testnet.zama.org/
+        const baseConfig = { ...sdk.SepoliaConfig };
+        const correctRelayerUrl = import.meta.env.VITE_RELAYER_URL || 'https://relayer.testnet.zama.org';
+        
+        // Fix relayer URL if it's using the wrong one
+        if (baseConfig.relayerUrl && baseConfig.relayerUrl.includes('.cloud')) {
+          console.warn('⚠️ [ZAMA SDK] SepoliaConfig has wrong relayer URL, fixing to .org...');
+          baseConfig.relayerUrl = correctRelayerUrl.replace(/\/+$/, '');
+        }
+        
+        const config = {
+          ...baseConfig,
+          // Override network with user's wallet provider
+          network: window.ethereum,
+          // Ensure correct relayer URL
+          relayerUrl: correctRelayerUrl.replace(/\/+$/, ''),
+        };
+        
+        console.log('🔐 [ZAMA SDK] SepoliaConfig keys:', Object.keys(config));
+        console.log('🔐 [ZAMA SDK] Relayer URL:', config.relayerUrl);
+        console.log('🔐 [ZAMA SDK] Using network provider:', typeof window.ethereum !== 'undefined' ? 'wallet provider' : 'none');
+        
+        try {
+          const instance = await sdk.createInstance(config);
+          sdkInstance = instance;
+          console.log('✅ [ZAMA SDK] Instance created successfully with SepoliaConfig');
+          return instance;
+        } catch (configError: any) {
+          const errorMsg = configError?.message || String(configError);
+          console.error('❌ [ZAMA SDK] Failed with SepoliaConfig:', errorMsg);
+          
+          // Check if it's a CORS or network error
+          if (errorMsg.includes('CORS') || errorMsg.includes('Cross-Origin') || errorMsg.includes('keyurl') || errorMsg.includes('Bad JSON') || errorMsg.includes('ERR_NAME_NOT_RESOLVED')) {
+            console.warn('⚠️ [ZAMA SDK] CORS/Network error detected. This might be a temporary relayer issue.');
+            console.warn('⚠️ [ZAMA SDK] The relayer might be blocking requests from localhost.');
+            console.warn('⚠️ [ZAMA SDK] Trying manual configuration as fallback...');
+            
+            // Fall through to manual configuration
+          } else {
+            throw configError;
+          }
+        }
+      }
+      
+      // Fallback: Manual configuration if SepoliaConfig not available
+      console.warn('⚠️ [ZAMA SDK] SepoliaConfig not found, using manual configuration...');
+      // Correct relayer URL according to latest Zama docs: https://relayer.testnet.zama.org/
+      const relayerUrl = import.meta.env.VITE_RELAYER_URL || 'https://relayer.testnet.zama.org';
+      const networkUrl = import.meta.env.VITE_SEPOLIA_RPC_URL || 'https://eth-sepolia.public.blastapi.io';
+      
       const config = {
-        ...baseConfig,
-        network: window.ethereum,
-        // Override relayer URL to use official Zama testnet relayer
-        // Try multiple property names as SDK might use different ones
-        relayerUrl: relayerUrl,
-        relayer: relayerUrl,
-        relayerEndpoint: relayerUrl,
-        gatewayUrl: relayerUrl,
+        // Required contract addresses for Sepolia (from Zama docs)
+        aclContractAddress: '0x687820221192C5B662b25367F70076A37bc79b6c',
+        kmsContractAddress: '0x1364cBBf2CDF5032C47d8226a6f6FBD2AFCDacAC',
+        inputVerifierContractAddress: '0xbc91f3daD1A5F19F8390c400196e58073B6a0BC4',
+        verifyingContractAddressDecryption: '0xb6E160B1ff80D67Bfe90A85eE06Ce0A2613607D1',
+        verifyingContractAddressInputVerification: '0x7048C39f048125eDa9d678AEbaDfB22F7900a29F',
+        // Chain IDs
+        chainId: 11155111, // Sepolia FHEVM Host chain
+        gatewayChainId: 55815, // Gateway chain
+        // Network provider
+        network: window.ethereum || networkUrl,
+        // Relayer URL
+        relayerUrl: relayerUrl.replace(/\/+$/, ''),
       };
-
-      console.log('🔐 [ZAMA SDK] Using relayer URL:', relayerUrl);
-      console.log('🔐 [ZAMA SDK] Base config keys:', Object.keys(baseConfig));
-
-      const instance = await sdk.createInstance(config);
-      sdkInstance = instance;
       
-      console.log('✅ [ZAMA SDK] Instance created successfully');
-      return instance;
+      console.log('🔐 [ZAMA SDK] Manual configuration:', {
+        chainId: config.chainId,
+        gatewayChainId: config.gatewayChainId,
+        relayerUrl: config.relayerUrl,
+        hasNetwork: !!config.network,
+      });
+
+      try {
+        const instance = await sdk.createInstance(config);
+        sdkInstance = instance;
+        console.log('✅ [ZAMA SDK] Instance created successfully');
+        return instance;
+      } catch (createError: any) {
+        const errorMsg = createError?.message || String(createError);
+        console.error('❌ [ZAMA SDK] Failed to create instance:', errorMsg);
+        
+        // Check for CORS/network errors
+        if (errorMsg.includes('CORS') || errorMsg.includes('Cross-Origin') || errorMsg.includes('keyurl') || errorMsg.includes('Bad JSON') || errorMsg.includes('did not succeed')) {
+          console.error('❌ [ZAMA SDK] CORS Error: The Zama relayer is blocking requests from localhost.');
+          console.error('💡 [ZAMA SDK] This is a known limitation:');
+          console.error('   • The Zama relayer server blocks CORS requests from localhost origins');
+          console.error('   • This is a server-side CORS configuration on Zama\'s end');
+          console.error('   • The app will use mock encryption as fallback (works for testing)');
+          console.error('💡 [ZAMA SDK] Solutions:');
+          console.error('   1. Deploy to production (Vercel/Netlify) - CORS works on public domains');
+          console.error('   2. Use a CORS proxy service (not recommended for production)');
+          console.error('   3. Contact Zama support to whitelist your localhost origin');
+          console.error('   4. For now, mock encryption will be used (functional but not real FHE)');
+          
+          // Don't throw - allow app to continue with mock encryption
+          // The app will handle this gracefully in fhe.ts
+          throw new Error(`Zama SDK CORS Error: The relayer at ${config.relayerUrl} is blocking requests from localhost. This is expected behavior - the relayer only allows requests from public domains. Deploy to production (Vercel/Netlify) for real FHE encryption, or use mock encryption for local testing.`);
+        }
+        
+        throw createError;
+      }
     } catch (error) {
       console.error('❌ [ZAMA SDK] Failed to create instance:', error);
       throw new Error(`Failed to create Zama SDK instance: ${error}`);

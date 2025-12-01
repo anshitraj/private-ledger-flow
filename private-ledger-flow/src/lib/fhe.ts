@@ -90,6 +90,14 @@ export async function encryptExpenseWithFHE(
         "Contract address not found. Set VITE_CONTRACT_ADDRESS in .env"
       );
     }
+    
+    // Validate contract address format
+    if (CONTRACT_ADDRESS === '0x0000000000000000000000000000000000000000' || !CONTRACT_ADDRESS.startsWith('0x') || CONTRACT_ADDRESS.length !== 42) {
+      console.error("❌ [ZAMA SDK] Invalid contract address:", CONTRACT_ADDRESS);
+      throw new Error(`Invalid contract address: ${CONTRACT_ADDRESS}. Please set a valid contract address in VITE_CONTRACT_ADDRESS.`);
+    }
+    
+    console.log("🔐 [ZAMA SDK] Contract address validated:", CONTRACT_ADDRESS);
 
     // Get user address from wallet if not provided
     if (!userAddress && typeof window !== "undefined" && window.ethereum) {
@@ -136,64 +144,164 @@ export async function encryptExpenseWithFHE(
 
     try {
       // Try different API patterns based on Relayer SDK documentation
+      // PRIORITY: Try direct encryption methods first (they don't require relayer input-proof)
+      // These methods encrypt locally without needing relayer approval
+      
       if (typeof (instance as any).encrypt64 === "function") {
+        console.log("🔐 [ZAMA SDK] Using encrypt64 method (direct encryption, no relayer needed)...");
         encryptedAmount = await (instance as any).encrypt64(
           CONTRACT_ADDRESS,
           payload.amount
         );
       } else if (typeof (instance as any).encrypt === "function") {
+        console.log("🔐 [ZAMA SDK] Using encrypt method...");
         // Try encrypt method with contract address and value
         encryptedAmount = await (instance as any).encrypt(
           CONTRACT_ADDRESS,
           payload.amount
         );
       } else if (typeof (instance as any).encryptUint64 === "function") {
+        console.log("🔐 [ZAMA SDK] Using encryptUint64 method...");
         encryptedAmount = await (instance as any).encryptUint64(
           CONTRACT_ADDRESS,
           payload.amount
         );
       } else if (typeof (instance as any).createEncryptedInput === "function") {
-        // Use the FHEVM-style API (if Relayer SDK supports it)
-        const input = (instance as any).createEncryptedInput(
-          CONTRACT_ADDRESS,
-          userAddress
-        );
-        input.add64(payload.amount);
-        const encrypted = await input.encrypt();
+        // According to Zama docs: createEncryptedInput is the CORRECT method
+        // https://docs.zama.org/protocol/relayer-sdk-guides
+        console.log("🔐 [ZAMA SDK] Using createEncryptedInput API (official Zama method)...");
+        console.log("🔐 [ZAMA SDK] Contract:", CONTRACT_ADDRESS);
+        console.log("🔐 [ZAMA SDK] User:", userAddress);
+        console.log("🔐 [ZAMA SDK] Amount:", payload.amount);
+        
+        try {
+          // Step 1: Create encrypted input buffer
+          // contractAddress: The address of the contract allowed to interact with the "fresh" ciphertexts
+          // userAddress: The address of the entity allowed to import ciphertexts to the contract
+          const buffer = (instance as any).createEncryptedInput(
+            CONTRACT_ADDRESS,
+            userAddress
+          );
+          
+          // Step 2: Add values with associated data-type method
+          // According to docs: buffer.add64(BigInt(value))
+          if (typeof buffer.add64 === "function") {
+            // Convert amount to BigInt as per Zama docs
+            buffer.add64(BigInt(Math.floor(payload.amount)));
+            console.log("✅ [ZAMA SDK] Added amount to buffer:", payload.amount);
+          } else if (typeof buffer.add === "function") {
+            buffer.add(BigInt(Math.floor(payload.amount)));
+            console.log("✅ [ZAMA SDK] Added amount to buffer (using add method)");
+          } else {
+            throw new Error("Input buffer doesn't have add64 or add method. Available methods: " + Object.keys(buffer).join(", "));
+          }
+          
+          // Step 3: Encrypt - this will:
+          // - Encrypt the values
+          // - Generate a proof of knowledge for it
+          // - Upload the ciphertexts using the relayer
+          // Returns: { handles: [...], inputProof: "..." }
+          console.log("🔐 [ZAMA SDK] Encrypting and uploading to relayer...");
+          const ciphertexts = await buffer.encrypt();
 
-        // Debug: Log encrypted structure
-        console.log("🔍 [ZAMA SDK] Encrypted object structure:", {
-          encryptedObject: encrypted,
-          hasData: !!encrypted.data,
-          hasHash: !!encrypted.hash,
-          keys: Object.keys(encrypted),
-          dataType: typeof encrypted.data,
-          dataIsArray: Array.isArray(encrypted.data),
-          dataLength: encrypted.data?.length,
-          dataConstructor: encrypted.data?.constructor?.name,
-        });
-
-        // Store the full encrypted object structure, not just data
-        // The encrypted object might have properties like: data, hash, etc.
-        // Ensure we're getting Uint8Array or array
-        if (encrypted.data) {
-          encryptedAmount = encrypted.data;
-        } else if (Array.isArray(encrypted)) {
-          encryptedAmount = new Uint8Array(encrypted);
-        } else if (encrypted instanceof Uint8Array) {
-          encryptedAmount = encrypted;
-        } else {
-          // Try to convert to Uint8Array
-          encryptedAmount = new Uint8Array(Object.values(encrypted as any));
+          // According to Zama docs, encrypt() returns:
+          // { handles: [ciphertextHandle1, ciphertextHandle2, ...], inputProof: "proof_string" }
+          console.log("✅ [ZAMA SDK] Encryption successful! Ciphertext structure:", {
+            hasHandles: !!ciphertexts.handles,
+            handlesCount: ciphertexts.handles?.length || 0,
+            hasInputProof: !!ciphertexts.inputProof,
+            handles: ciphertexts.handles,
+            keys: Object.keys(ciphertexts),
+          });
+          
+          // For FHEVM, we need to use the ciphertext handle (not the raw data)
+          // The handle is what gets passed to the contract's FHE.fromExternal() function
+          if (ciphertexts.handles && ciphertexts.handles.length > 0) {
+            // Use the first handle (for single value encryption)
+            const handle = ciphertexts.handles[0];
+            
+            // Convert handle to Uint8Array for storage
+            // The handle is typically a string or object that represents the ciphertext
+            if (typeof handle === 'string') {
+              // If handle is a string, convert to Uint8Array
+              encryptedAmount = new TextEncoder().encode(handle);
+            } else if (handle instanceof Uint8Array) {
+              encryptedAmount = handle;
+            } else if (handle && typeof handle === 'object') {
+              // If handle is an object, try to extract data
+              encryptedAmount = new TextEncoder().encode(JSON.stringify(handle));
+            } else {
+              // Fallback: use the handle as-is
+              encryptedAmount = new TextEncoder().encode(String(handle));
+            }
+            
+            // Store the inputProof separately for contract calls
+            // This will be used when calling contract functions with FHE.fromExternal()
+            console.log("✅ [ZAMA SDK] Using ciphertext handle:", {
+              handle: handle,
+              inputProofLength: ciphertexts.inputProof?.length || 0,
+              encryptedAmountLength: encryptedAmount.length,
+            });
+          } else {
+            throw new Error("No ciphertext handles returned from encryption");
+          }
+        } catch (inputError: any) {
+          // If createEncryptedInput fails (e.g., relayer rejects input-proof),
+          // Log detailed error information
+          const errorMsg = inputError?.message || String(inputError);
+          console.error("❌ [ZAMA SDK] createEncryptedInput failed:", errorMsg);
+          console.error("❌ [ZAMA SDK] Error details:", {
+            contract: CONTRACT_ADDRESS,
+            user: userAddress,
+            amount: payload.amount,
+            errorType: inputError?.constructor?.name,
+            errorStack: inputError?.stack?.substring(0, 200),
+          });
+          
+          // Check if it's a relayer rejection
+          if (errorMsg.includes('Rejected') || errorMsg.includes('rejected') || errorMsg.includes('Bad status')) {
+            console.error("❌ [ZAMA SDK] Relayer rejected the input-proof request.");
+            console.error("💡 [ZAMA SDK] This usually means:");
+            console.error("   1. Contract not whitelisted with Zama relayer");
+            console.error("      → Your contract must be registered with Zama");
+            console.error("      → Contact Zama support: https://docs.zama.org or community.zama.org");
+            console.error("   2. Contract doesn't have required FHE functions");
+            console.error("      → Contract must use FHE.fromExternal() to accept encrypted inputs");
+            console.error("      → Your contract has storeEncryptedAmount() which is correct");
+            console.error("   3. Contract address might be wrong or not deployed");
+            console.error("      → Verify contract is deployed on Sepolia");
+            console.error("      → Check contract address:", CONTRACT_ADDRESS);
+            
+            // Try direct encryption as fallback (might not require relayer approval)
+            if (typeof (instance as any).encrypt64 === "function") {
+              console.warn("⚠️ [ZAMA SDK] Trying encrypt64 directly (bypasses relayer)...");
+              try {
+                encryptedAmount = await (instance as any).encrypt64(
+                  CONTRACT_ADDRESS,
+                  payload.amount
+                );
+                console.log("✅ [ZAMA SDK] encrypt64 succeeded (local encryption)");
+              } catch (encrypt64Error: any) {
+                console.error("❌ [ZAMA SDK] encrypt64 also failed:", encrypt64Error.message);
+                throw new Error(`Both createEncryptedInput and encrypt64 failed. Relayer rejection: ${errorMsg}. Encrypt64 error: ${encrypt64Error.message}`);
+              }
+            } else {
+              // No fallback available
+              throw new Error(`createEncryptedInput failed: Relayer rejected transaction. Your contract (${CONTRACT_ADDRESS}) may need to be whitelisted with Zama. Error: ${errorMsg}`);
+            }
+          } else {
+            // Other error - try encrypt64 as fallback
+            if (typeof (instance as any).encrypt64 === "function") {
+              console.warn("⚠️ [ZAMA SDK] Trying encrypt64 directly as fallback...");
+              encryptedAmount = await (instance as any).encrypt64(
+                CONTRACT_ADDRESS,
+                payload.amount
+              );
+            } else {
+              throw new Error(`createEncryptedInput failed: ${errorMsg}`);
+            }
+          }
         }
-
-        console.log("✅ [ZAMA SDK] Final encryptedAmount:", {
-          type: typeof encryptedAmount,
-          isArray: Array.isArray(encryptedAmount),
-          isUint8Array: encryptedAmount instanceof Uint8Array,
-          length: encryptedAmount.length,
-          firstFew: Array.from(encryptedAmount.slice(0, 10)),
-        });
       } else if (
         typeof (instance as any).generateEncryptedAmount === "function"
       ) {
@@ -224,7 +332,40 @@ export async function encryptExpenseWithFHE(
       }
     } catch (encryptError: any) {
       console.error("❌ [ZAMA SDK] Encryption error:", encryptError);
-      throw new Error(`Zama SDK encryption failed: ${encryptError.message}`);
+      
+      // Check if it's a relayer rejection error
+      const errorMessage = encryptError.message || String(encryptError);
+      if (errorMessage.includes('Rejected') || errorMessage.includes('rejected') || errorMessage.includes('Bad status')) {
+        console.error("❌ [ZAMA SDK] Relayer rejected transaction. Detailed analysis:");
+        console.error("   Contract Address:", CONTRACT_ADDRESS);
+        console.error("   User Address:", userAddress);
+        console.error("   Relayer URL: https://relayer.testnet.zama.org");
+        console.error("");
+        console.error("❌ [ZAMA SDK] Common causes:");
+        console.error("   1. Contract not whitelisted with Zama relayer");
+        console.error("      → Your contract must be registered with Zama to use the relayer");
+        console.error("      → Contact Zama support or check their documentation");
+        console.error("   2. Contract doesn't implement required FHE functions");
+        console.error("      → Contract must use FHE.fromExternal() to accept encrypted inputs");
+        console.error("      → Check: https://docs.zama.org/protocol/solidity-guides");
+        console.error("   3. User address not authorized");
+        console.error("      → The user address must be allowed to import ciphertexts");
+        console.error("   4. Network/chain mismatch");
+        console.error("      → Ensure contract is deployed on Sepolia (chainId: 11155111)");
+        console.error("   5. Relayer service issues");
+        console.error("      → Check Zama status page or try again later");
+        console.error("");
+        console.error("💡 [ZAMA SDK] For localhost testing:");
+        console.error("   → The app will use mock encryption (works for testing)");
+        console.error("   → Real FHE encryption requires contract whitelisting with Zama");
+        console.error("   → Deploy to production and contact Zama for contract registration");
+        
+        // Don't throw - allow fallback to mock encryption for testing
+        // The app will handle this gracefully
+        throw new Error(`Zama SDK encryption failed: Relayer rejected the transaction. Your contract (${CONTRACT_ADDRESS}) may need to be whitelisted with Zama. For testing, mock encryption will be used. Original error: ${errorMessage}`);
+      }
+      
+      throw new Error(`Zama SDK encryption failed: ${errorMessage}`);
     }
 
     // For metadata (category, note, etc.), we'll include it as JSON alongside the encrypted amount

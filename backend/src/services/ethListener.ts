@@ -1,7 +1,5 @@
 import { ethers } from "ethers";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma, executeWithRetry } from "../db/prisma";
 
 // ABI for ConfidentialExpenses contract
 const CONTRACT_ABI = [
@@ -84,21 +82,23 @@ class EthListener {
   ) {
     try {
       // Store in database (skip txHash lookup for now due to free tier limits)
-      await prisma.expense.upsert({
-        where: { cid },
-        create: {
-          userAddress: user.toLowerCase(),
-          cid,
-          submissionHash,
-          txHash: "pending", // Will be updated when available
-          blockNumber: null,
-          timestamp: new Date(Number(timestamp) * 1000),
-          status: "confirmed",
-        },
-        update: {
-          status: "confirmed",
-        },
-      });
+      await executeWithRetry(() =>
+        prisma.expense.upsert({
+          where: { cid },
+          create: {
+            userAddress: user.toLowerCase(),
+            cid,
+            submissionHash,
+            txHash: "pending", // Will be updated when available
+            blockNumber: null,
+            timestamp: new Date(Number(timestamp) * 1000),
+            status: "confirmed",
+          },
+          update: {
+            status: "confirmed",
+          },
+        })
+      );
       
       console.log(`✅ Indexed expense: ${cid} from ${user}`);
     } catch (error: any) {
@@ -245,23 +245,25 @@ class EthListener {
                 const blockNumber = (event as ethers.Log).blockNumber?.toString() || null;
                 
                 // Store with txHash and blockNumber
-                await prisma.expense.upsert({
-                  where: { cid },
-                  create: {
-                    userAddress: user.toLowerCase(),
-                    cid,
-                    submissionHash,
-                    txHash,
-                    blockNumber,
-                    timestamp: new Date(Number(timestamp) * 1000),
-                    status: "confirmed",
-                  },
-                  update: {
-                    txHash,
-                    blockNumber,
-                    status: "confirmed",
-                  },
-                });
+                await executeWithRetry(() =>
+                  prisma.expense.upsert({
+                    where: { cid },
+                    create: {
+                      userAddress: user.toLowerCase(),
+                      cid,
+                      submissionHash,
+                      txHash,
+                      blockNumber,
+                      timestamp: new Date(Number(timestamp) * 1000),
+                      status: "confirmed",
+                    },
+                    update: {
+                      txHash,
+                      blockNumber,
+                      status: "confirmed",
+                    },
+                  })
+                );
                 
                 synced++;
               }
