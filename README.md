@@ -296,4 +296,11 @@ Built with:
 
 ---
 
+**Application Screenshot** 
+<img width="1919" height="873" alt="image" src="https://github.com/user-attachments/assets/11331508-241d-43ca-911a-91037f5e9d18" />
+<img width="1913" height="900" alt="image" src="https://github.com/user-attachments/assets/51a91dcb-b73c-495a-aa1b-c84e567cef5e" />
+<img width="1919" height="896" alt="image" src="https://github.com/user-attachments/assets/bf5e2241-3814-4aae-8b1d-323d27c0fd8f" />
+<img width="1919" height="901" alt="image" src="https://github.com/user-attachments/assets/977df79d-12d4-4871-8feb-6d7d544a99b7" />
+
+
 **Built with ❤️ using Zama FHE technology**
