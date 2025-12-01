@@ -46,7 +46,9 @@ export function ExpenseCard({ expense, onDecrypt, showDecrypt = false }: Expense
     });
   };
 
-  const getCategoryLabel = (category: string) => {
+  const getCategoryLabel = (category: string): string => {
+    // Type assertion needed for dynamic i18n keys
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return t(`expense.categories.${category}` as any);
   };
 

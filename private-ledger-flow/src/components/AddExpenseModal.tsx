@@ -166,7 +166,7 @@ export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange 
         functionName: 'attestExpense',
         args: [submissionHash, cid, txMeta],
         gas: BigInt(500000),
-      } as any);
+      } as Parameters<typeof writeContract>[0]);
       
       toast.success('Transaction submitted! Waiting for confirmation...');
       
@@ -275,7 +275,7 @@ export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange 
               <Label htmlFor="currency">{t('expense.currency')}</Label>
               <Select
                 value={formData.currency}
-                onValueChange={(value: any) => setFormData({ ...formData, currency: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, currency: value })}
                 disabled={loading}
               >
                 <SelectTrigger id="currency">
@@ -293,7 +293,7 @@ export function AddExpenseModal({ onSuccess, open: controlledOpen, onOpenChange 
               <Label htmlFor="category">{t('expense.category')}</Label>
               <Select
                 value={formData.category}
-                onValueChange={(value: any) => setFormData({ ...formData, category: value })}
+                onValueChange={(value: string) => setFormData({ ...formData, category: value })}
                 disabled={loading}
               >
                 <SelectTrigger id="category">

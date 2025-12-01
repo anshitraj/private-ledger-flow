@@ -11,7 +11,11 @@ export function Chart({ data, title }: ChartProps) {
   const { t } = useTranslation();
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
+  interface TooltipProps {
+    active?: boolean;
+    payload?: Array<{ payload: { date: string; total: number } }>;
+  }
+  const CustomTooltip = ({ active, payload }: TooltipProps) => {
     if (active && payload && payload.length) {
       return (
         <div className="rounded-lg border border-border bg-background p-3 shadow-lg">
