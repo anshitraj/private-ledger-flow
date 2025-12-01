@@ -24,6 +24,36 @@ Private Expense Tracker is a privacy-first financial application that leverages 
 
 📖 **[FHEVM_INTEGRATION.md](./docs/FHEVM_INTEGRATION.md)** - Complete guide on encryption workflows, smart contract patterns, relayer integration, and privacy architecture.
 
+### System Overview
+
+```mermaid
+graph TB
+    subgraph "User Layer"
+        A[👤 User] --> B[💻 React Frontend]
+    end
+    
+    subgraph "Encryption Layer"
+        B --> C[🔐 Zama Relayer SDK]
+        C --> D[📦 IPFS Storage]
+    end
+    
+    subgraph "Blockchain Layer"
+        B --> E[⚡ Smart Contract<br/>ConfidentialExpenses.sol]
+        E --> F[🔗 Sepolia Network]
+    end
+    
+    subgraph "Backend Layer"
+        D --> G[🖥️ Express.js API]
+        F --> G
+        G --> H[🗄️ PostgreSQL Database]
+    end
+    
+    style A fill:#f9d71c,stroke:#333,stroke-width:2px
+    style C fill:#9b59b6,stroke:#333,stroke-width:2px,color:#fff
+    style E fill:#4a90e2,stroke:#333,stroke-width:2px,color:#fff
+    style G fill:#2ecc71,stroke:#333,stroke-width:2px,color:#fff
+```
+
 ## Key Features
 
 ### Privacy-First Architecture
