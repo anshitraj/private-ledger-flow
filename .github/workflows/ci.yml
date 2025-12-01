@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd hardhat
-          npm ci
+          npm install
       
       - name: Run Hardhat tests
         run: |
@@ -63,7 +63,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd backend
-          npm ci
+          npm install
       
       - name: Generate Prisma Client
         run: |
@@ -101,7 +101,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd private-ledger-flow
-          npm ci
+          npm install
       
       - name: Run frontend tests
         run: |
