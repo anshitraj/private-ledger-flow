@@ -22,14 +22,14 @@ export default function Dashboard() {
   const connectButtonRef = useRef<HTMLDivElement>(null);
 
   // Convert backend records to expenses and merge with local state
-  // Use useMemo to prevent unnecessary recalculations
-  const backendRecordsKey = useMemo(() => {
-    return JSON.stringify(backendRecords.map(r => `${r.cid}-${r.txHash}`).sort());
-  }, [backendRecords]);
-  
   useEffect(() => {
-    if (backendRecords.length === 0 && expenses.length === 0) {
-      return; // Don't update if both are empty
+    console.log('🔄 [DASHBOARD] Backend records changed:', backendRecords.length, 'records');
+    console.log('🔄 [DASHBOARD] isLoading:', isLoading);
+    console.log('🔄 [DASHBOARD] Current expenses:', expenses.length);
+    
+    if (isLoading) {
+      console.log('⏳ [DASHBOARD] Still loading, skipping update');
+      return; // Don't update while loading
     }
     
     const convertedExpenses: Expense[] = backendRecords.map(record => ({
@@ -45,6 +45,8 @@ export default function Dashboard() {
       status: record.status === 'confirmed' ? 'attested' : 'pending',
     }));
     
+    console.log('✅ [DASHBOARD] Converted', convertedExpenses.length, 'expenses from backend records');
+    
     // Merge backend records with local state (preserve local optimistic updates)
     setExpenses(prev => {
       const existingMap = new Map(prev.map(e => [e.cid, e]));
@@ -53,17 +55,15 @@ export default function Dashboard() {
       });
       const newExpenses = Array.from(existingMap.values());
       
-      // Only update if the content actually changed
-      const prevKey = JSON.stringify(prev.map(e => `${e.cid}-${e.txHash}`).sort());
-      const newKey = JSON.stringify(newExpenses.map(e => `${e.cid}-${e.txHash}`).sort());
-      
-      if (prevKey === newKey && prev.length === newExpenses.length) {
-        return prev; // Return same reference if nothing changed
-      }
+      console.log('📊 [DASHBOARD] Updating expenses:', {
+        prev: prev.length,
+        new: newExpenses.length,
+        backend: backendRecords.length,
+      });
       
       return newExpenses;
     });
-  }, [backendRecordsKey]); // Use stable key instead of array reference
+  }, [backendRecords, isLoading]); // Update when backendRecords or loading state changes
 
   const handleAddExpense = (newExpense: Expense) => {
     setExpenses(prev => {
